@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://www.tanakagaadzikwa.com/</loc>
+    <lastmod>2026-10-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://i.ibb.co/pvvN63sV/20260526-181511.webp</image:loc>
+      <image:title>Tanaka Gaadzikwa - Young Entrepreneur, Startup Cupid &amp; Minister of AI</image:title>
+      <image:caption>Official portrait of Tanaka Gaadzikwa, Young Entrepreneur, Startup Cupid and Minister of AI from Harare, Zimbabwe.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://i.ibb.co/sdcn3p4x/IMG-20260930-WA0001.webp</image:loc>
+      <image:title>Tanaka Gaadzikwa - Founder &amp; CEO of LINKUP</image:title>
+      <image:caption>Tanaka Gaadzikwa building LINKUP matchmaking platform.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://i.ibb.co/WNGVKXg6/IMG-20260930-WA0000.webp</image:loc>
+      <image:title>Tanaka Gaadzikwa - Startup Cupid</image:title>
+      <image:caption>Tanaka Gaadzikwa working on co-founder matchmaking.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://i.ibb.co/DHnTYFLF/IMG-20260730-114833.webp</image:loc>
+      <image:title>Tanaka Gaadzikwa - Tech Hub Builder</image:title>
+      <image:caption>Tanaka Gaadzikwa representing youth innovation in Harare, Zimbabwe.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://i.ibb.co/BHN84Z9M/20260526-181536.webp</image:loc>
+      <image:title>Tanaka Gaadzikwa - The Minister of AI</image:title>
+      <image:caption>Tanaka Gaadzikwa, The Minister of AI and creator of Linky AI.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://i.ibb.co/DHnKZWtw/20250411-090522.webp</image:loc>
+      <image:title>Tanaka Gaadzikwa - Software Builder</image:title>
+      <image:caption>Tanaka Gaadzikwa software development in Zimbabwe.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://i.ibb.co/Q7ww6xBh/20250411-090743.webp</image:loc>
+      <image:title>Tanaka Gaadzikwa - LINKUP Matchmaking Platform</image:title>
+      <image:caption>Tanaka Gaadzikwa architectural and code design.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://i.ibb.co/szxQw83/20250411-090734.webp</image:loc>
+      <image:title>Tanaka Gaadzikwa - Linky AI Matchmaker</image:title>
+      <image:caption>Linky AI assistant created by Tanaka Gaadzikwa.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.tanakagaadzikwa.com/#about</loc>
+    <lastmod>2026-10-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.tanakagaadzikwa.com/#journey</loc>
+    <lastmod>2026-10-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.tanakagaadzikwa.com/#companies</loc>
+    <lastmod>2026-10-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.tanakagaadzikwa.com/#projects</loc>
+    <lastmod>2026-10-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.tanakagaadzikwa.com/#media</loc>
+    <lastmod>2026-10-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.tanakagaadzikwa.com/#contact</loc>
+    <lastmod>2026-10-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>
