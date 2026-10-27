@@ -6,7 +6,7 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 
 export default function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#060D0A] text-white font-sans selection:bg-emerald-500/30 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#0B1120] text-white font-sans selection:bg-[#38BDF8]/30 selection:text-white">
       {/* Main Single-Page Experience with Hero top placement */}
       <main className="flex-1 w-full">
         <HomePage />

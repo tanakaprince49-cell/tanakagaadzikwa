@@ -77,7 +77,7 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full bg-[#060D0A] text-white overflow-hidden">
+    <div className="relative w-full bg-[#0B1120] text-white overflow-hidden">
       
       {/* Cinematic Fullscreen Hero */}
       <Hero 
@@ -87,12 +87,12 @@ export const HomePage: React.FC = () => {
       />
 
       {/* 01. ABOUT ME */}
-      <section id="about" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#0E261B]/60 bg-[#060D0A]">
+      <section id="about" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#1E293B]/60 bg-[#0B1120]">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-gradient-to-tr from-sky-900/10 via-indigo-950/20 to-transparent blur-[120px] pointer-events-none" aria-hidden="true" />
 
         <div className="mx-auto max-w-5xl px-6 lg:px-8 space-y-14 relative z-10">
           <div className="space-y-4 text-center max-w-3xl mx-auto">
-            <span className="font-serif text-xs tracking-[0.3em] uppercase text-emerald-300/80 drop-shadow">
+            <span className="font-serif text-xs tracking-[0.3em] uppercase text-sky-300/80 drop-shadow">
               01. About Me
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white tracking-[0.05em] leading-tight">
@@ -103,7 +103,7 @@ export const HomePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="liquid-glass-card rounded-3xl p-8 sm:p-12 space-y-8 border-[#0E261B]/80 shadow-2xl shadow-[#030806]">
+          <div className="liquid-glass-card rounded-3xl p-8 sm:p-12 space-y-8 border-[#1E293B]/80 shadow-2xl shadow-[#060A17]">
             <div className="space-y-6 text-zinc-200 leading-relaxed text-base font-normal">
               <p>
                 I&apos;m Tanaka Gaadzikwa (born November 20, 2010), a young entrepreneur and software builder based in Harare, Zimbabwe. I&apos;m interested in technology, artificial intelligence, and entrepreneurship, particularly how software can solve real problems and help people access opportunities they might otherwise struggle to find.
@@ -129,12 +129,12 @@ export const HomePage: React.FC = () => {
               <p>
                 My long-term goal is to build sustainable technology businesses that solve meaningful problems, create opportunities, and give me the freedom to keep pursuing ambitious ideas.
               </p>
-              <p className="text-emerald-300 italic font-serif">
+              <p className="text-sky-300 italic font-serif">
                 I&apos;m not here to pretend I&apos;ve figured everything out. I&apos;m here to build, learn, and see how far execution can take me.
               </p>
             </div>
 
-            <div className="pt-6 border-t border-[#0E261B]/80 flex flex-wrap items-center justify-center sm:justify-start gap-3">
+            <div className="pt-6 border-t border-[#1E293B]/80 flex flex-wrap items-center justify-center sm:justify-start gap-3">
               <a href="https://play.google.com/store/apps/details?id=com.tana.linkup" target="_blank" rel="noopener noreferrer" className="liquid-glass px-4 py-2 rounded-xl flex items-center gap-2 hover:border-white hover:scale-105 transition-all">
                 <GooglePlayLogo className="w-4 h-4 shrink-0 text-white" />
                 <span className="text-xs text-white font-medium">Google Play</span>
@@ -153,10 +153,10 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 02. MY JOURNEY */}
-      <section id="journey" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#0E261B]/60 bg-gradient-to-b from-[#060D0A] to-[#0D1527]">
+      <section id="journey" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#1E293B]/60 bg-gradient-to-b from-[#0B1120] to-[#0D1527]">
         <div className="mx-auto max-w-5xl px-6 lg:px-8 space-y-14">
           <div className="space-y-3 text-center max-w-3xl mx-auto">
-            <span className="font-serif text-xs tracking-[0.3em] uppercase text-emerald-300/80 drop-shadow">
+            <span className="font-serif text-xs tracking-[0.3em] uppercase text-sky-300/80 drop-shadow">
               02. My Journey
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white">
@@ -167,7 +167,7 @@ export const HomePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="liquid-glass-card rounded-3xl p-8 sm:p-12 space-y-8 border-[#0E261B]/80 shadow-2xl shadow-[#030806] text-zinc-200 leading-relaxed text-sm sm:text-base">
+          <div className="liquid-glass-card rounded-3xl p-8 sm:p-12 space-y-8 border-[#1E293B]/80 shadow-2xl shadow-[#060A17] text-zinc-200 leading-relaxed text-sm sm:text-base">
             <div className="space-y-6">
               <div>
                 <h3 className="font-serif text-xl text-white mb-2">Discovering the Possibilities of Technology</h3>
@@ -216,10 +216,10 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 03. COMPANIES & VENTURES */}
-      <section id="companies" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#0E261B]/60 bg-[#060D0A]">
+      <section id="companies" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#1E293B]/60 bg-[#0B1120]">
         <div className="mx-auto max-w-6xl px-6 lg:px-8 space-y-16">
           <div className="space-y-3 text-center max-w-3xl mx-auto">
-            <span className="font-serif text-xs tracking-[0.3em] uppercase text-emerald-300/80 drop-shadow">
+            <span className="font-serif text-xs tracking-[0.3em] uppercase text-sky-300/80 drop-shadow">
               03. Companies &amp; Ventures
             </span>
             <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-normal text-white">
@@ -230,8 +230,8 @@ export const HomePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="liquid-glass-card rounded-3xl p-8 sm:p-12 space-y-10 border-[#0E261B]/80 shadow-2xl shadow-[#030806]">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-8 border-b border-[#0E261B]/80">
+          <div className="liquid-glass-card rounded-3xl p-8 sm:p-12 space-y-10 border-[#1E293B]/80 shadow-2xl shadow-[#060A17]">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-8 border-b border-[#1E293B]/80">
               <div className="space-y-3">
                 <h3 className="font-serif text-3xl sm:text-4xl text-white font-normal tracking-wide">
                   The Matchmaking Platform for Builders
@@ -242,11 +242,11 @@ export const HomePage: React.FC = () => {
               </div>
 
               <div className="flex flex-wrap items-center gap-3 shrink-0">
-                <a href="https://play.google.com/store/apps/details?id=com.tana.linkup" target="_blank" rel="noopener noreferrer" className="liquid-glass-button inline-flex items-center gap-2.5 px-5 py-3 rounded-xl text-white text-xs font-medium tracking-wide hover:scale-105 transition-all shadow-md shadow-[#030806]" title="Google Play">
+                <a href="https://play.google.com/store/apps/details?id=com.tana.linkup" target="_blank" rel="noopener noreferrer" className="liquid-glass-button inline-flex items-center gap-2.5 px-5 py-3 rounded-xl text-white text-xs font-medium tracking-wide hover:scale-105 transition-all shadow-md shadow-[#060A17]" title="Google Play">
                   <GooglePlayLogo className="w-4 h-4 shrink-0 text-white" />
                   <span>Google Play</span>
                 </a>
-                <a href="https://www.linkupbuild.com/" target="_blank" rel="noopener noreferrer" className="liquid-glass inline-flex items-center gap-2.5 px-5 py-3 rounded-xl text-white text-xs font-medium tracking-wide border-[#0E261B] hover:border-white hover:scale-105 transition-all" title="LINKUP">
+                <a href="https://www.linkupbuild.com/" target="_blank" rel="noopener noreferrer" className="liquid-glass inline-flex items-center gap-2.5 px-5 py-3 rounded-xl text-white text-xs font-medium tracking-wide border-[#1E293B] hover:border-white hover:scale-105 transition-all" title="LINKUP">
                   <LinkupLogo className="w-4 h-4 shrink-0 text-white" />
                   <span>LINKUP</span>
                   <ExternalLink className="w-3 h-3 text-zinc-400" />
@@ -255,7 +255,7 @@ export const HomePage: React.FC = () => {
             </div>
 
             <div className="space-y-8 text-zinc-200 leading-relaxed text-sm sm:text-base">
-              <div className="p-6 rounded-2xl liquid-glass border-[#0E261B]/80 space-y-4">
+              <div className="p-6 rounded-2xl liquid-glass border-[#1E293B]/80 space-y-4">
                 <h4 className="font-serif text-xl text-white font-normal">The Problem</h4>
                 <p className="text-zinc-300">
                   Traditional networking often depends on existing relationships, broad professional networks, cold outreach, and the ability to get noticed in crowded online communities. Those approaches can make it difficult for people to find collaborators who share their interests and complement their abilities. LINKUP explores a different approach: helping people discover connections based on what they want to build, the skills they bring, and the opportunities they&apos;re looking for.
@@ -263,7 +263,7 @@ export const HomePage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 rounded-2xl liquid-glass border-[#0E261B]/80 space-y-3">
+                <div className="p-6 rounded-2xl liquid-glass border-[#1E293B]/80 space-y-3">
                   <h4 className="font-serif text-lg text-white">Who It&apos;s For</h4>
                   <ul className="space-y-2 text-xs text-zinc-300">
                     <li><strong className="text-white">Founders:</strong> Discover potential collaborators who complement your skills.</li>
@@ -273,7 +273,7 @@ export const HomePage: React.FC = () => {
                   </ul>
                 </div>
 
-                <div className="p-6 rounded-2xl liquid-glass border-[#0E261B]/80 space-y-3">
+                <div className="p-6 rounded-2xl liquid-glass border-[#1E293B]/80 space-y-3">
                   <h4 className="font-serif text-lg text-white">The Role of AI</h4>
                   <p className="text-xs text-zinc-300 text-zinc-300 leading-relaxed">
                     LINKUP explores how conversational AI can make professional discovery more intuitive. Its AI assistant, Linky, supports discovery by helping users express what they&apos;re looking for in natural language.
@@ -286,10 +286,10 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 04. PROJECTS & EXPERIMENTS */}
-      <section id="projects" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#0E261B]/60 bg-gradient-to-b from-[#060D0A] to-[#0D1527]">
+      <section id="projects" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#1E293B]/60 bg-gradient-to-b from-[#0B1120] to-[#0D1527]">
         <div className="mx-auto max-w-5xl px-6 lg:px-8 space-y-12">
           <div className="space-y-3 text-center max-w-3xl mx-auto">
-            <span className="font-serif text-xs tracking-[0.3em] uppercase text-emerald-300/80 drop-shadow">
+            <span className="font-serif text-xs tracking-[0.3em] uppercase text-sky-300/80 drop-shadow">
               04. Projects &amp; Experiments
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white">
@@ -301,9 +301,9 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-4 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-4 border-[#1E293B]/80">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-emerald-400">AI / Networking / Venture</span>
+                <span className="text-xs font-mono text-sky-400">AI / Networking / Venture</span>
                 <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/20">Active</span>
               </div>
               <h3 className="font-serif text-2xl text-white">LINKUP</h3>
@@ -311,16 +311,16 @@ export const HomePage: React.FC = () => {
                 My primary venture exploring how AI can help people discover potential collaborators and build meaningful professional connections through conversational discovery and matchmaking.
               </p>
               <div className="pt-2">
-                <a href="https://www.linkupbuild.com/" target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:underline inline-flex items-center gap-1">
+                <a href="https://www.linkupbuild.com/" target="_blank" rel="noopener noreferrer" className="text-xs text-sky-400 hover:underline inline-flex items-center gap-1">
                   <span>Visit LINKUP</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-4 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-4 border-[#1E293B]/80">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono text-emerald-400">Artificial Intelligence</span>
+                <span className="text-xs font-mono text-sky-400">Artificial Intelligence</span>
                 <span className="px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 text-[10px] font-mono border border-purple-500/20">Ongoing</span>
               </div>
               <h3 className="font-serif text-2xl text-white">AI Experiments</h3>
@@ -333,10 +333,10 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 05. AI & TECHNOLOGY */}
-      <section id="ai-tech" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#0E261B]/60 bg-[#060D0A]">
+      <section id="ai-tech" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#1E293B]/60 bg-[#0B1120]">
         <div className="mx-auto max-w-5xl px-6 lg:px-8 space-y-12">
           <div className="space-y-3 text-center max-w-3xl mx-auto">
-            <span className="font-serif text-xs tracking-[0.3em] uppercase text-emerald-300/80 drop-shadow">
+            <span className="font-serif text-xs tracking-[0.3em] uppercase text-sky-300/80 drop-shadow">
               05. AI &amp; Technology
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white">
@@ -347,7 +347,7 @@ export const HomePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="liquid-glass-card rounded-3xl p-8 sm:p-12 space-y-8 border-[#0E261B]/80 shadow-2xl shadow-[#030806] text-zinc-200 leading-relaxed text-sm sm:text-base">
+          <div className="liquid-glass-card rounded-3xl p-8 sm:p-12 space-y-8 border-[#1E293B]/80 shadow-2xl shadow-[#060A17] text-zinc-200 leading-relaxed text-sm sm:text-base">
             <div className="space-y-6">
               <div>
                 <h3 className="font-serif text-xl text-white mb-2">Conversational AI Agents</h3>
@@ -382,10 +382,10 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 06. WRITING & INSIGHTS */}
-      <section id="writing" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#0E261B]/60 bg-gradient-to-b from-[#060D0A] to-[#0D1527]">
+      <section id="writing" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#1E293B]/60 bg-gradient-to-b from-[#0B1120] to-[#0D1527]">
         <div className="mx-auto max-w-5xl px-6 lg:px-8 space-y-12">
           <div className="space-y-3 text-center max-w-3xl mx-auto">
-            <span className="font-serif text-xs tracking-[0.3em] uppercase text-emerald-300/80 drop-shadow">
+            <span className="font-serif text-xs tracking-[0.3em] uppercase text-sky-300/80 drop-shadow">
               06. Writing &amp; Insights
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white">
@@ -397,28 +397,28 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#1E293B]/80">
               <h3 className="font-serif text-xl text-white">Entrepreneurship</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Exploring the practical side of building a business: identifying problems, understanding users, communicating value, and validating ideas before investing too much time.
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#1E293B]/80">
               <h3 className="font-serif text-xl text-white">Artificial Intelligence</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Examining practical AI applications, technical limitations, product decisions, and the difference between an impressive demo and a genuinely useful system.
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#1E293B]/80">
               <h3 className="font-serif text-xl text-white">Software Development</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Sharing lessons about development tools, architecture, debugging, product implementation, and moving from an idea to working software.
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#1E293B]/80">
               <h3 className="font-serif text-xl text-white">Building From Zimbabwe</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Reflecting on the experience of building outside major tech hubs—working with limited resources, learning independently, and connecting globally.
@@ -429,10 +429,10 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 07. BUILDING IN PUBLIC */}
-      <section id="building-public" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#0E261B]/60 bg-[#060D0A]">
+      <section id="building-public" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#1E293B]/60 bg-[#0B1120]">
         <div className="mx-auto max-w-5xl px-6 lg:px-8 space-y-12">
           <div className="space-y-3 text-center max-w-3xl mx-auto">
-            <span className="font-serif text-xs tracking-[0.3em] uppercase text-emerald-300/80 drop-shadow">
+            <span className="font-serif text-xs tracking-[0.3em] uppercase text-sky-300/80 drop-shadow">
               07. Building in Public
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white">
@@ -443,7 +443,7 @@ export const HomePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="liquid-glass-card rounded-3xl p-8 sm:p-12 space-y-8 border-[#0E261B]/80 shadow-2xl shadow-[#030806] text-zinc-200 leading-relaxed text-sm sm:text-base">
+          <div className="liquid-glass-card rounded-3xl p-8 sm:p-12 space-y-8 border-[#1E293B]/80 shadow-2xl shadow-[#060A17] text-zinc-200 leading-relaxed text-sm sm:text-base">
             <div className="space-y-6">
               <div>
                 <h3 className="font-serif text-xl text-white mb-2">Building and Iterating</h3>
@@ -471,10 +471,10 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 08. MY PHILOSOPHY */}
-      <section id="philosophy" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#0E261B]/60 bg-gradient-to-b from-[#060D0A] to-[#0D1527]">
+      <section id="philosophy" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#1E293B]/60 bg-gradient-to-b from-[#0B1120] to-[#0D1527]">
         <div className="mx-auto max-w-5xl px-6 lg:px-8 space-y-12">
           <div className="space-y-3 text-center max-w-3xl mx-auto">
-            <span className="font-serif text-xs tracking-[0.3em] uppercase text-emerald-300/80 drop-shadow">
+            <span className="font-serif text-xs tracking-[0.3em] uppercase text-sky-300/80 drop-shadow">
               08. My Philosophy
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white">
@@ -486,56 +486,56 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#1E293B]/80">
               <h3 className="font-serif text-lg text-white">1. Action Creates Information</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Thinking is important, but action reveals things that speculation cannot. Spend less time assuming and more time gathering evidence.
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#1E293B]/80">
               <h3 className="font-serif text-lg text-white">2. Small Improvements Compound</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Meaningful progress comes from repeated improvements rather than one dramatic breakthrough.
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#1E293B]/80">
               <h3 className="font-serif text-lg text-white">3. Build for Real Problems</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Technology is a means, not an end. Evaluate ideas based on the problems they solve, not how impressive they sound.
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#1E293B]/80">
               <h3 className="font-serif text-lg text-white">4. Geography Shouldn&apos;t Define Ambition</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Building from Harare, Zimbabwe, I use modern tools to build products for global audiences while working intelligently within constraints.
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#1E293B]/80">
               <h3 className="font-serif text-lg text-white">5. Learn Before Claiming Expertise</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Stay curious, question assumptions, and be honest about what I know and what I&apos;m still learning.
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#1E293B]/80">
               <h3 className="font-serif text-lg text-white">6. Distribution Matters</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 A useful product cannot help people who never discover it. Building and communicating must work together.
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#1E293B]/80">
               <h3 className="font-serif text-lg text-white">7. Build With Integrity</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Judge work by what it actually does. Be honest about product limitations and respect users.
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#0E261B]/80">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-2 border-[#1E293B]/80">
               <h3 className="font-serif text-lg text-white">8. Keep the Long Term in View</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">
                 Build businesses that can grow sustainably and create lasting value over time.
@@ -546,10 +546,10 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 09. MEDIA & RECOGNITION */}
-      <section id="media" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#0E261B]/60 bg-[#060D0A]">
+      <section id="media" className="relative z-10 w-full py-28 lg:py-36 border-b border-[#1E293B]/60 bg-[#0B1120]">
         <div className="mx-auto max-w-5xl px-6 lg:px-8 space-y-12">
           <div className="space-y-3 text-center max-w-3xl mx-auto">
-            <span className="font-serif text-xs tracking-[0.3em] uppercase text-emerald-300/80 drop-shadow">
+            <span className="font-serif text-xs tracking-[0.3em] uppercase text-sky-300/80 drop-shadow">
               09. Media &amp; Recognition
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white">
@@ -561,8 +561,8 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#0E261B]/80 shadow-xl">
-              <div className="flex items-center gap-2 text-xs font-mono text-emerald-400">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#1E293B]/80 shadow-xl">
+              <div className="flex items-center gap-2 text-xs font-mono text-sky-400">
                 <span>Official Moniker &amp; Identity</span>
               </div>
               <h3 className="font-serif text-2xl text-white">Startup Cupid</h3>
@@ -571,8 +571,8 @@ export const HomePage: React.FC = () => {
               </p>
             </div>
 
-            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#0E261B]/80 shadow-xl">
-              <div className="flex items-center gap-2 text-xs font-mono text-emerald-400">
+            <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#1E293B]/80 shadow-xl">
+              <div className="flex items-center gap-2 text-xs font-mono text-sky-400">
                 <span>AI Leadership &amp; Innovation</span>
               </div>
               <h3 className="font-serif text-2xl text-white">The Minister of AI</h3>
@@ -585,10 +585,10 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 10. CONNECT WITH ME */}
-      <section id="contact" className="relative z-10 w-full py-28 lg:py-36 bg-gradient-to-b from-[#060D0A] to-[#030806]">
+      <section id="contact" className="relative z-10 w-full py-28 lg:py-36 bg-gradient-to-b from-[#0B1120] to-[#060A17]">
         <div className="mx-auto max-w-5xl px-6 lg:px-8 space-y-16">
           <div className="space-y-3 text-center max-w-2xl mx-auto">
-            <span className="font-serif text-xs tracking-[0.3em] uppercase text-emerald-300/80 drop-shadow">
+            <span className="font-serif text-xs tracking-[0.3em] uppercase text-sky-300/80 drop-shadow">
               10. Connect With Me
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white tracking-[0.05em]">
@@ -600,7 +600,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 max-w-4xl mx-auto">
-            <a href="https://play.google.com/store/apps/details?id=com.tana.linkup" target="_blank" rel="noopener noreferrer" className="liquid-glass p-4 rounded-2xl flex flex-col items-center justify-center gap-2.5 hover:border-white hover:bg-[#0E261B]/60 hover:scale-105 transition-all text-center group" title="Google Play">
+            <a href="https://play.google.com/store/apps/details?id=com.tana.linkup" target="_blank" rel="noopener noreferrer" className="liquid-glass p-4 rounded-2xl flex flex-col items-center justify-center gap-2.5 hover:border-white hover:bg-[#1E293B]/60 hover:scale-105 transition-all text-center group" title="Google Play">
               <GooglePlayLogo className="w-6 h-6 text-white" />
               <span className="text-xs font-medium text-white">Google Play</span>
             </a>
@@ -608,7 +608,7 @@ export const HomePage: React.FC = () => {
               <WhatsAppLogo className="w-6 h-6 text-white" />
               <span className="text-xs font-medium text-white">WhatsApp</span>
             </a>
-            <a href="https://t.me/tanaka_93" target="_blank" rel="noopener noreferrer" className="liquid-glass p-4 rounded-2xl flex flex-col items-center justify-center gap-2.5 hover:border-emerald-400 hover:bg-sky-950/30 hover:scale-105 transition-all text-center group" title="Telegram">
+            <a href="https://t.me/tanaka_93" target="_blank" rel="noopener noreferrer" className="liquid-glass p-4 rounded-2xl flex flex-col items-center justify-center gap-2.5 hover:border-sky-400 hover:bg-sky-950/30 hover:scale-105 transition-all text-center group" title="Telegram">
               <TelegramLogo className="w-6 h-6 text-white" />
               <span className="text-xs font-medium text-white">Telegram</span>
             </a>
@@ -624,7 +624,7 @@ export const HomePage: React.FC = () => {
 
           <div className="max-w-xl mx-auto">
             {submitted ? (
-              <div className="liquid-glass-card p-10 rounded-3xl text-center space-y-3 border-[#0E261B]/80 shadow-2xl shadow-[#030806]">
+              <div className="liquid-glass-card p-10 rounded-3xl text-center space-y-3 border-[#1E293B]/80 shadow-2xl shadow-[#060A17]">
                 <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
                 <h3 className="font-serif text-xl text-white">Message Dispatched</h3>
                 <p className="text-xs text-zinc-300">
@@ -632,7 +632,7 @@ export const HomePage: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleContactSubmit} className="liquid-glass-card p-8 rounded-3xl space-y-4 border-[#0E261B]/80 shadow-2xl shadow-[#030806]">
+              <form onSubmit={handleContactSubmit} className="liquid-glass-card p-8 rounded-3xl space-y-4 border-[#1E293B]/80 shadow-2xl shadow-[#060A17]">
                 <div className="pb-1 text-center">
                   <h3 className="font-serif text-sm tracking-[0.2em] uppercase text-zinc-300">Send Direct Note</h3>
                 </div>
@@ -653,7 +653,7 @@ export const HomePage: React.FC = () => {
 
                 <textarea rows={4} placeholder="Your Message..." value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} className="liquid-glass-input w-full px-4 py-3 text-xs rounded-xl text-white placeholder-zinc-500 focus:outline-none transition-all duration-300 resize-none leading-relaxed" required />
 
-                <button type="submit" disabled={loading} className="liquid-glass-button w-full py-3.5 font-serif text-xs tracking-[0.2em] uppercase text-white disabled:opacity-50 transition-all duration-300 rounded-xl font-medium flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#030806]">
+                <button type="submit" disabled={loading} className="liquid-glass-button w-full py-3.5 font-serif text-xs tracking-[0.2em] uppercase text-white disabled:opacity-50 transition-all duration-300 rounded-xl font-medium flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#060A17]">
                   {loading ? <span>Dispatching...</span> : (
                     <>
                       <span>Send Message</span>
