@@ -2,54 +2,54 @@ import React, { useState, useRef } from 'react';
 import { 
   X, 
   Upload, 
-  Link as LinkIcon, 
-  Image as ImageIcon, 
+  ImageIcon, 
   Eye, 
   Edit3, 
-  Sparkles, 
   Check, 
   AlertCircle,
   Clock,
-  User,
-  Tag,
   Bold,
   Italic,
   Heading2,
   Quote,
-  List
+  List,
+  Lock
 } from 'lucide-react';
-import { BlogPost } from '../types';
-import { PRESET_COVER_IMAGES, saveNewBlog, calculateReadTime } from '../data/blogsData';
+import { BlogPost, UserProfile } from '../types';
+import { saveNewBlog, calculateReadTime } from '../data/blogsData';
 
 interface WriteBlogModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPublished: (post: BlogPost) => void;
+  currentUser: UserProfile | null;
+  onRequireAuth: () => void;
 }
 
 const CATEGORIES = [
-  'Community Stories',
-  'Building in Public',
-  'AI & Software',
+  'General',
+  'Software Development',
+  'Artificial Intelligence',
   'Entrepreneurship',
+  'Building in Public',
   'Building from Zimbabwe',
-  'Product Development',
-  'Design & Code',
+  'Product & Design',
 ];
 
-export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose, onPublished }) => {
+export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onPublished,
+  currentUser,
+  onRequireAuth
+}) => {
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   
   // Form State
   const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [authorRole, setAuthorRole] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
-  const [imageUrl, setImageUrl] = useState(PRESET_COVER_IMAGES[0].url);
-  const [imageMode, setImageMode] = useState<'upload' | 'url' | 'presets'>('presets');
-  const [customUrlInput, setCustomUrlInput] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [body, setBody] = useState('');
-  const [tagsInput, setTagsInput] = useState('Community, Tech, Startups');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -103,20 +103,6 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
     }
   };
 
-  const handleApplyCustomUrl = () => {
-    const trimmed = customUrlInput.trim();
-    if (!trimmed) {
-      setErrorMessage('Please enter an image URL.');
-      return;
-    }
-    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-      setErrorMessage('Image URL must start with https://');
-      return;
-    }
-    setImageUrl(trimmed);
-    setErrorMessage(null);
-  };
-
   const insertFormatting = (prefix: string, suffix: string = '') => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -139,38 +125,42 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
     e.preventDefault();
     setErrorMessage(null);
 
+    if (!currentUser) {
+      onRequireAuth();
+      return;
+    }
+
     if (!title.trim()) {
       setErrorMessage('Please enter a title for your blog post.');
       return;
     }
 
-    if (!body.trim() || body.trim().length < 40) {
-      setErrorMessage('Please write a substantive story or lesson (at least 40 characters).');
+    if (!imageUrl) {
+      setErrorMessage('Please upload a cover picture for your blog.');
       return;
     }
 
-    if (!imageUrl) {
-      setErrorMessage('Please provide a cover picture for your blog.');
+    if (!body.trim() || body.trim().length < 20) {
+      setErrorMessage('Please write the body of the blog (at least 20 characters).');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const parsedTags = tagsInput
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean);
+      const authorFullName = `${currentUser.name} ${currentUser.surname}`.trim();
 
       const created = saveNewBlog({
         title,
         body,
         imageUrl,
-        author: author || 'Community Builder',
-        authorRole: authorRole || 'Contributor',
+        author: authorFullName,
         category,
-        tags: parsedTags,
       });
+
+      // Attach author avatar and email
+      created.authorAvatar = currentUser.avatarUrl;
+      created.authorEmail = currentUser.email;
 
       setIsSubmitting(false);
       onPublished(created);
@@ -186,37 +176,37 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
   const estimatedRead = calculateReadTime(body);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150">
       <div 
-        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#0D1527] border border-[#1E293B] rounded-2xl sm:rounded-3xl shadow-2xl shadow-black overflow-hidden my-auto"
+        className="relative w-full max-w-3xl max-h-[92vh] flex flex-col bg-white text-zinc-900 rounded-3xl shadow-2xl border border-zinc-200 overflow-hidden my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1E293B]/80 bg-[#090E1A]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 bg-zinc-50/70">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+            <div className="w-9 h-9 rounded-xl bg-zinc-200/80 flex items-center justify-center text-zinc-800">
               <Edit3 className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-serif font-semibold text-white">
-                Publish a Story on TanakaGaadzikwa.com
+              <h2 className="text-base sm:text-lg font-serif font-semibold text-zinc-900">
+                Write a Blog
               </h2>
-              <p className="text-xs text-zinc-400">
-                Open to all builders, founders, engineers, and creators.
+              <p className="text-xs text-zinc-500">
+                Publish a story on TanakaGaadzikwa.com
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             {/* Tab Switcher */}
-            <div className="flex items-center bg-[#131D33] p-1 rounded-xl border border-[#1E293B]">
+            <div className="flex items-center bg-zinc-200/70 p-1 rounded-xl">
               <button
                 type="button"
                 onClick={() => setActiveTab('write')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   activeTab === 'write' 
-                    ? 'bg-sky-500 text-white shadow-sm' 
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-white text-zinc-900 shadow-sm' 
+                    : 'text-zinc-600 hover:text-zinc-900'
                 }`}
               >
                 <Edit3 className="w-3.5 h-3.5" />
@@ -225,10 +215,10 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
               <button
                 type="button"
                 onClick={() => setActiveTab('preview')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   activeTab === 'preview' 
-                    ? 'bg-sky-500 text-white shadow-sm' 
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'bg-white text-zinc-900 shadow-sm' 
+                    : 'text-zinc-600 hover:text-zinc-900'
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
@@ -238,7 +228,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
 
             <button
               onClick={onClose}
-              className="p-2 text-zinc-400 hover:text-white rounded-xl hover:bg-white/5 transition-colors"
+              className="p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-full transition-colors"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
@@ -249,9 +239,47 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
         {/* Modal Body */}
         <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
           {errorMessage && (
-            <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-200 text-xs sm:text-sm flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
               <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {/* Author Status Card */}
+          {currentUser ? (
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200">
+              <div className="flex items-center gap-3">
+                <img 
+                  src={currentUser.avatarUrl} 
+                  alt={currentUser.name} 
+                  className="w-10 h-10 rounded-full object-cover border border-zinc-300 shadow-sm"
+                />
+                <div>
+                  <div className="text-xs font-bold text-zinc-900">
+                    Publishing as {currentUser.name} {currentUser.surname}
+                  </div>
+                  <div className="text-[11px] text-zinc-500">
+                    {currentUser.email}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                Verified Author
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-amber-50/70 border border-amber-200 gap-3">
+              <div className="flex items-center gap-2.5 text-xs text-amber-900">
+                <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>You need an account to publish. Create your profile with photo in seconds.</span>
+              </div>
+              <button
+                type="button"
+                onClick={onRequireAuth}
+                className="px-4 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-colors shrink-0"
+              >
+                Sign In / Sign Up
+              </button>
             </div>
           )}
 
@@ -259,143 +287,79 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
             <form id="write-blog-form" onSubmit={handleSubmit} className="space-y-6">
               
               {/* Title Input */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono uppercase tracking-wider text-zinc-300">
-                    Blog Title <span className="text-sky-400">*</span>
-                  </label>
-                  <span className="text-[11px] font-mono text-zinc-500">
-                    {title.length} chars
-                  </span>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                  Blog Title *
+                </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. How I Built an Offline-First AI App from Harare"
-                  className="w-full px-4 py-3 text-base sm:text-lg font-serif bg-[#111A2E] border border-[#1E293B] rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-sky-500/70 focus:ring-1 focus:ring-sky-500/50 transition-all"
+                  placeholder="e.g. How I Built My First Offline-First App"
+                  className="w-full px-4 py-3 text-base sm:text-lg font-serif bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all"
                   required
                 />
               </div>
 
-              {/* Author & Role Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-sky-400" />
-                    <span>Your Name / Pseudonym</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={author}
-                    onChange={(e) => setAuthor(e.target.value)}
-                    placeholder="e.g. Tanaka, Alex M., or Anonym"
-                    className="w-full px-3.5 py-2.5 text-xs bg-[#111A2E] border border-[#1E293B] rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-sky-500/70"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase tracking-wider text-zinc-300">
-                    Your Role / Tagline
-                  </label>
-                  <input
-                    type="text"
-                    value={authorRole}
-                    onChange={(e) => setAuthorRole(e.target.value)}
-                    placeholder="e.g. Solo Developer, Student, AI Enthusiast"
-                    className="w-full px-3.5 py-2.5 text-xs bg-[#111A2E] border border-[#1E293B] rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-sky-500/70"
-                  />
-                </div>
+              {/* Category */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                  Category *
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-zinc-900 focus:bg-white cursor-pointer"
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Category & Tags Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase tracking-wider text-zinc-300">
-                    Category <span className="text-sky-400">*</span>
+              {/* Picture Upload (Presets and URL completely removed) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4 text-zinc-600" />
+                    <span>Picture *</span>
                   </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs bg-[#111A2E] border border-[#1E293B] rounded-xl text-white focus:outline-none focus:border-sky-500/70 cursor-pointer"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat} className="bg-[#0D1527] text-white">
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+                  {imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      className="text-[11px] text-red-500 hover:underline"
+                    >
+                      Remove picture
+                    </button>
+                  )}
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
-                    <Tag className="w-3.5 h-3.5 text-sky-400" />
-                    <span>Tags (Comma-separated)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={tagsInput}
-                    onChange={(e) => setTagsInput(e.target.value)}
-                    placeholder="Startups, Python, AI, Zimbabwe"
-                    className="w-full px-3.5 py-2.5 text-xs bg-[#111A2E] border border-[#1E293B] rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-sky-500/70"
-                  />
-                </div>
-              </div>
-
-              {/* Picture / Cover Image Selector */}
-              <div className="space-y-3 p-4 rounded-2xl bg-[#090E1A] border border-[#1E293B]">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <label className="text-xs font-mono uppercase tracking-wider text-zinc-200 flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-sky-400" />
-                    <span>Cover Picture <span className="text-sky-400">*</span></span>
-                  </label>
-
-                  {/* Mode Selector */}
-                  <div className="flex items-center gap-1 bg-[#131D33] p-1 rounded-xl text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setImageMode('upload')}
-                      className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
-                        imageMode === 'upload' ? 'bg-sky-500/30 text-sky-200 border border-sky-400/40' : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <Upload className="w-3 h-3" />
-                      <span>Upload</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setImageMode('presets')}
-                      className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
-                        imageMode === 'presets' ? 'bg-sky-500/30 text-sky-200 border border-sky-400/40' : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      <span>Presets</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setImageMode('url')}
-                      className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
-                        imageMode === 'url' ? 'bg-sky-500/30 text-sky-200 border border-sky-400/40' : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      <LinkIcon className="w-3 h-3" />
-                      <span>URL</span>
-                    </button>
+                {imageUrl ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-zinc-200 aspect-[21/9]">
+                    <img 
+                      src={imageUrl} 
+                      alt="Cover Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-end p-3">
+                      <span className="text-[11px] font-medium text-white bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
+                        Selected Picture
+                      </span>
+                    </div>
                   </div>
-                </div>
-
-                {/* Mode 1: File Upload */}
-                {imageMode === 'upload' && (
+                ) : (
                   <div
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                    className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
                       isDragging 
-                        ? 'border-sky-400 bg-sky-950/20' 
-                        : 'border-[#1E293B] hover:border-sky-500/50 bg-[#111A2E]/50'
+                        ? 'border-zinc-900 bg-zinc-100' 
+                        : 'border-zinc-300 hover:border-zinc-600 bg-zinc-50'
                     }`}
                   >
                     <input
@@ -409,99 +373,27 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
                         }
                       }}
                     />
-                    <Upload className="w-8 h-8 text-sky-400 mx-auto mb-2 opacity-80" />
-                    <p className="text-xs sm:text-sm font-medium text-white">
-                      Click to choose an image or drag & drop here
+                    <Upload className="w-8 h-8 text-zinc-500 mx-auto mb-2" />
+                    <p className="text-xs sm:text-sm font-semibold text-zinc-800">
+                      Click to choose a picture or drag &amp; drop
                     </p>
                     <p className="text-[11px] text-zinc-500 mt-1">
                       PNG, JPG, or WEBP up to 5MB
                     </p>
                   </div>
                 )}
-
-                {/* Mode 2: Presets */}
-                {imageMode === 'presets' && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
-                    {PRESET_COVER_IMAGES.map((preset) => {
-                      const isSelected = imageUrl === preset.url;
-                      return (
-                        <button
-                          key={preset.url}
-                          type="button"
-                          onClick={() => setImageUrl(preset.url)}
-                          className={`relative group rounded-xl overflow-hidden border text-left aspect-video transition-all ${
-                            isSelected 
-                              ? 'border-sky-400 ring-2 ring-sky-400/30 scale-[1.02]' 
-                              : 'border-[#1E293B] hover:border-white/30 opacity-70 hover:opacity-100'
-                          }`}
-                        >
-                          <img 
-                            src={preset.url} 
-                            alt={preset.label} 
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-2 flex flex-col justify-end">
-                            <span className="text-[10px] font-medium text-white line-clamp-1">
-                              {preset.label}
-                            </span>
-                          </div>
-                          {isSelected && (
-                            <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-sky-500 text-white flex items-center justify-center">
-                              <Check className="w-2.5 h-2.5" />
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Mode 3: Direct URL */}
-                {imageMode === 'url' && (
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={customUrlInput}
-                      onChange={(e) => setCustomUrlInput(e.target.value)}
-                      placeholder="https://images.unsplash.com/photo-..."
-                      className="flex-1 px-3.5 py-2 text-xs bg-[#111A2E] border border-[#1E293B] rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-sky-500/70"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleApplyCustomUrl}
-                      className="px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white text-xs font-medium rounded-xl transition-colors"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                )}
-
-                {/* Image Preview Thumbnail */}
-                {imageUrl && (
-                  <div className="relative rounded-xl overflow-hidden border border-[#1E293B] aspect-[21/9] sm:aspect-[24/8] mt-2">
-                    <img 
-                      src={imageUrl} 
-                      alt="Cover Preview" 
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-                    <span className="absolute bottom-2 left-3 text-[11px] font-mono text-zinc-300 bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
-                      Cover Picture Preview
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* Body Textarea with Markdown Toolbar */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono uppercase tracking-wider text-zinc-300">
-                    Story Body <span className="text-sky-400">*</span>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                    Body of the Blog *
                   </label>
-                  <div className="flex items-center gap-3 text-[11px] font-mono text-zinc-400">
+                  <div className="flex items-center gap-3 text-[11px] font-mono text-zinc-500">
                     <span>{wordCount} words</span>
                     <span>·</span>
-                    <span className="flex items-center gap-1 text-sky-400">
+                    <span className="flex items-center gap-1 text-zinc-700">
                       <Clock className="w-3 h-3" />
                       {estimatedRead}
                     </span>
@@ -509,11 +401,11 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
                 </div>
 
                 {/* Formatting Toolbar */}
-                <div className="flex items-center gap-1 p-1 bg-[#090E1A] border border-[#1E293B] rounded-t-xl text-zinc-400">
+                <div className="flex items-center gap-1 p-1 bg-zinc-100 border border-zinc-200 rounded-t-xl text-zinc-600">
                   <button
                     type="button"
                     onClick={() => insertFormatting('**', '**')}
-                    className="p-1.5 rounded hover:bg-white/10 hover:text-white transition-colors"
+                    className="p-1.5 rounded hover:bg-white hover:text-zinc-900 transition-colors"
                     title="Bold (**text**)"
                   >
                     <Bold className="w-3.5 h-3.5" />
@@ -521,7 +413,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
                   <button
                     type="button"
                     onClick={() => insertFormatting('*', '*')}
-                    className="p-1.5 rounded hover:bg-white/10 hover:text-white transition-colors"
+                    className="p-1.5 rounded hover:bg-white hover:text-zinc-900 transition-colors"
                     title="Italic (*text*)"
                   >
                     <Italic className="w-3.5 h-3.5" />
@@ -529,7 +421,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
                   <button
                     type="button"
                     onClick={() => insertFormatting('### ', '')}
-                    className="p-1.5 rounded hover:bg-white/10 hover:text-white transition-colors"
+                    className="p-1.5 rounded hover:bg-white hover:text-zinc-900 transition-colors"
                     title="Subheading (### Heading)"
                   >
                     <Heading2 className="w-3.5 h-3.5" />
@@ -537,7 +429,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
                   <button
                     type="button"
                     onClick={() => insertFormatting('> ', '')}
-                    className="p-1.5 rounded hover:bg-white/10 hover:text-white transition-colors"
+                    className="p-1.5 rounded hover:bg-white hover:text-zinc-900 transition-colors"
                     title="Quote (> Quote)"
                   >
                     <Quote className="w-3.5 h-3.5" />
@@ -545,14 +437,11 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
                   <button
                     type="button"
                     onClick={() => insertFormatting('- ', '')}
-                    className="p-1.5 rounded hover:bg-white/10 hover:text-white transition-colors"
+                    className="p-1.5 rounded hover:bg-white hover:text-zinc-900 transition-colors"
                     title="Bullet List (- Item)"
                   >
                     <List className="w-3.5 h-3.5" />
                   </button>
-                  <span className="text-[10px] text-zinc-500 ml-auto pr-2">
-                    Supports Markdown paragraphs & quotes
-                  </span>
                 </div>
 
                 <textarea
@@ -560,8 +449,8 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   rows={10}
-                  placeholder="Share your story, your development breakdown, lessons from launching, or startup insights here..."
-                  className="w-full px-4 py-3.5 text-sm sm:text-base bg-[#111A2E] border border-t-0 border-[#1E293B] rounded-b-xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-sky-500/70 focus:ring-1 focus:ring-sky-500/50 leading-relaxed font-sans resize-y"
+                  placeholder="Write the body of your blog here..."
+                  className="w-full px-4 py-3.5 text-sm sm:text-base bg-zinc-50 border border-t-0 border-zinc-200 rounded-b-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white leading-relaxed font-sans resize-y"
                   required
                 />
               </div>
@@ -569,83 +458,57 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
             </form>
           ) : (
             /* Live Preview Tab */
-            <div className="space-y-8 animate-in fade-in duration-150">
-              <div className="rounded-2xl overflow-hidden border border-[#1E293B] bg-[#090E1A]">
-                {/* Hero cover image */}
-                <div className="relative aspect-[21/9] w-full overflow-hidden">
-                  <img
-                    src={imageUrl || PRESET_COVER_IMAGES[0].url}
-                    alt={title || 'Blog Preview'}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#090E1A] via-transparent to-transparent" />
-                </div>
+            <div className="space-y-6">
+              <div className="rounded-2xl overflow-hidden border border-zinc-200 bg-white shadow-sm">
+                {imageUrl && (
+                  <div className="relative aspect-[21/9] w-full overflow-hidden bg-zinc-100">
+                    <img
+                      src={imageUrl}
+                      alt={title || 'Blog Preview'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
 
                 <div className="p-6 sm:p-8 space-y-6">
-                  {/* Category and Read time */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700">
                       {category}
                     </span>
-                    <span className="text-xs text-zinc-400 font-mono flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {estimatedRead}
+                    <span className="text-xs text-zinc-500 font-mono">
+                      · {estimatedRead}
                     </span>
-                    <span className="text-xs text-zinc-500">· Just now</span>
                   </div>
 
-                  {/* Title */}
-                  <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-white font-normal leading-tight">
+                  <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-zinc-900 leading-tight">
                     {title || 'Untitled Blog Post'}
                   </h1>
 
-                  {/* Author Meta */}
-                  <div className="flex items-center gap-3 pt-2 border-t border-[#1E293B]">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
-                      {(author || 'C')[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-white">
-                        {author || 'Community Builder'}
+                  {currentUser && (
+                    <div className="flex items-center gap-3 pt-4 border-t border-zinc-100">
+                      <img 
+                        src={currentUser.avatarUrl} 
+                        alt={currentUser.name} 
+                        className="w-10 h-10 rounded-full object-cover border border-zinc-200 shadow-sm"
+                      />
+                      <div>
+                        <div className="text-sm font-semibold text-zinc-900">
+                          {currentUser.name} {currentUser.surname}
+                        </div>
+                        <div className="text-xs text-zinc-500">
+                          Author Profile
+                        </div>
                       </div>
-                      <div className="text-xs text-zinc-400">
-                        {authorRole || 'Contributor'}
-                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Body Content */}
-                  <div className="pt-4 space-y-4 text-zinc-300 text-sm sm:text-base leading-relaxed border-t border-[#1E293B]">
+                  <div className="pt-4 space-y-4 text-zinc-700 text-sm sm:text-base leading-relaxed border-t border-zinc-100">
                     {body ? (
-                      body.split('\n\n').map((paragraph, idx) => {
-                        if (paragraph.startsWith('### ')) {
-                          return (
-                            <h3 key={idx} className="font-serif text-xl text-white pt-2 font-semibold">
-                              {paragraph.replace('### ', '')}
-                            </h3>
-                          );
-                        }
-                        if (paragraph.startsWith('> ')) {
-                          return (
-                            <blockquote key={idx} className="border-l-4 border-sky-400 pl-4 py-1 italic text-zinc-200 bg-sky-950/20 rounded-r-lg">
-                              {paragraph.replace('> ', '')}
-                            </blockquote>
-                          );
-                        }
-                        if (paragraph.startsWith('- ')) {
-                          const items = paragraph.split('\n- ');
-                          return (
-                            <ul key={idx} className="list-disc pl-5 space-y-1 text-zinc-300">
-                              {items.map((item, i) => (
-                                <li key={i}>{item.replace(/^- /, '')}</li>
-                              ))}
-                            </ul>
-                          );
-                        }
-                        return <p key={idx}>{paragraph}</p>;
-                      })
+                      body.split('\n\n').map((paragraph, idx) => (
+                        <p key={idx}>{paragraph}</p>
+                      ))
                     ) : (
-                      <p className="text-zinc-500 italic">No body content written yet.</p>
+                      <p className="text-zinc-400 italic">No body text yet.</p>
                     )}
                   </div>
                 </div>
@@ -655,11 +518,11 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-[#1E293B]/80 bg-[#090E1A]">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-100 bg-zinc-50/70">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+            className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 transition-colors"
           >
             Cancel
           </button>
@@ -669,15 +532,15 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
               <button
                 type="button"
                 onClick={() => setActiveTab('preview')}
-                className="px-4 py-2 text-xs font-medium text-zinc-300 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-100 rounded-xl transition-colors"
               >
-                Preview Story
+                Preview
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setActiveTab('write')}
-                className="px-4 py-2 text-xs font-medium text-zinc-300 bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-100 rounded-xl transition-colors"
               >
                 Back to Edit
               </button>
@@ -687,7 +550,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
               type="submit"
               form="write-blog-form"
               disabled={isSubmitting}
-              className="px-5 py-2.5 bg-white hover:bg-zinc-200 text-black font-semibold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2.5 bg-zinc-900 hover:bg-black text-white font-semibold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? 'Publishing...' : 'Publish Blog'}
             </button>

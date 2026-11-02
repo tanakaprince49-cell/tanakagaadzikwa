@@ -29,10 +29,12 @@ import {
 } from 'lucide-react';
 import { GooglePlayLogo, WhatsAppLogo, TelegramLogo, LinkedInLogo, GmailLogo, LinkupLogo } from '../components/PlatformLogos';
 import { GoogleSearchSimulator } from '../components/GoogleSearchSimulator';
-import { BlogPost } from '../types';
+import { BlogPost, UserProfile } from '../types';
 import { getStoredBlogs } from '../data/blogsData';
+import { getCurrentUser } from '../data/authData';
 import { WriteBlogModal } from '../components/WriteBlogModal';
 import { BlogReaderModal } from '../components/BlogReaderModal';
+import { AuthModal } from '../components/AuthModal';
 
 interface HomePageProps {
   onNavigateToBlogs?: () => void;
@@ -41,18 +43,35 @@ interface HomePageProps {
 export const HomePage: React.FC<HomePageProps> = ({ onNavigateToBlogs }) => {
   const linkup = projectsData.find((p) => p.id === 'linkup') || projectsData[0];
 
-  // Blog state
+  // Blog and Auth state
   const [blogs, setBlogs] = useState<BlogPost[]>(() => getStoredBlogs());
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => getCurrentUser());
   const [isWriteBlogOpen, setIsWriteBlogOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
 
   useEffect(() => {
     const handleUpdate = () => {
       setBlogs(getStoredBlogs());
     };
+    const handleAuth = () => {
+      setCurrentUser(getCurrentUser());
+    };
     window.addEventListener('tg_blogs_updated', handleUpdate);
-    return () => window.removeEventListener('tg_blogs_updated', handleUpdate);
+    window.addEventListener('tg_auth_changed', handleAuth);
+    return () => {
+      window.removeEventListener('tg_blogs_updated', handleUpdate);
+      window.removeEventListener('tg_auth_changed', handleAuth);
+    };
   }, []);
+
+  const handleOpenWriteBlog = () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+    } else {
+      setIsWriteBlogOpen(true);
+    }
+  };
 
   // Contact form state
   const [formData, setFormData] = useState({
@@ -424,7 +443,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToBlogs }) => {
             <div className="pt-2 flex items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={() => setIsWriteBlogOpen(true)}
+                onClick={handleOpenWriteBlog}
                 className="liquid-glass-button px-4 py-2 font-serif text-xs tracking-[0.2em] uppercase text-white rounded-xl flex items-center gap-2 cursor-pointer shadow-md"
               >
                 <Edit3 className="w-3.5 h-3.5" />
@@ -761,6 +780,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToBlogs }) => {
 
       <GoogleSearchSimulator isOpen={isSearchSimulatorOpen} onClose={() => setIsSearchSimulatorOpen(false)} />
 
+      {/* Auth Modal for Sign Up / Sign In */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={(user) => {
+          setCurrentUser(user);
+          setIsWriteBlogOpen(true);
+        }}
+      />
+
       {/* Community Story Publisher Modal */}
       <WriteBlogModal
         isOpen={isWriteBlogOpen}
@@ -769,14 +798,20 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToBlogs }) => {
           setBlogs(getStoredBlogs());
           setSelectedBlogPost(newPost);
         }}
+        currentUser={currentUser}
+        onRequireAuth={() => {
+          setIsWriteBlogOpen(false);
+          setIsAuthModalOpen(true);
+        }}
       />
 
       {/* Blog Post Reader Modal */}
       <BlogReaderModal
         post={selectedBlogPost}
         onClose={() => setSelectedBlogPost(null)}
-        onOpenWriteBlog={() => setIsWriteBlogOpen(true)}
+        onOpenWriteBlog={handleOpenWriteBlog}
         onPostDeleted={() => setBlogs(getStoredBlogs())}
+        currentUser={currentUser}
       />
     </div>
   );

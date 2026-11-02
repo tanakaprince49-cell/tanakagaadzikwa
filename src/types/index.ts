@@ -55,8 +55,10 @@ export interface BlogPost {
   body: string;
   imageUrl: string;
   author: string;
+  authorSurname?: string;
   authorRole?: string;
   authorAvatar?: string;
+  authorEmail?: string;
   category: string;
   publishedDate: string;
   readTime: string;
@@ -64,6 +66,15 @@ export interface BlogPost {
   tags?: string[];
   isFeatured?: boolean;
   isCommunityPost?: boolean;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  surname: string;
+  email: string;
+  avatarUrl: string;
+  createdAt: string;
 }
 
 export interface NowItem {
