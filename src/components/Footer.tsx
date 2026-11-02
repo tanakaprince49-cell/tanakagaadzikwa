@@ -58,9 +58,8 @@ export const Footer: React.FC = () => {
             <a href="/" className="hover:text-white transition-colors">
               Portfolio
             </a>
-            <a href="/blogs" className="text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1 font-semibold">
-              <span>Community Blogs</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+            <a href="/blogs" className="hover:text-white transition-colors">
+              Blogs
             </a>
             <a href="https://linkupbuild.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
               LINKUP Platform

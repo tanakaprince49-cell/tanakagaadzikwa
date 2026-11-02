@@ -687,16 +687,9 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ isOpen, onClose,
               type="submit"
               form="write-blog-form"
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-sky-400 to-sky-600 hover:from-sky-300 hover:to-sky-500 text-black font-semibold text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-sky-500/20 disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2.5 bg-white hover:bg-zinc-200 text-black font-semibold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md disabled:opacity-50 cursor-pointer"
             >
-              {isSubmitting ? (
-                <span>Publishing...</span>
-              ) : (
-                <>
-                  <span>Publish Story</span>
-                  <Sparkles className="w-3.5 h-3.5" />
-                </>
-              )}
+              {isSubmitting ? 'Publishing...' : 'Publish Blog'}
             </button>
           </div>
         </div>

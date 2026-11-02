@@ -412,128 +412,83 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToBlogs }) => {
         <div className="mx-auto max-w-5xl px-6 lg:px-8 space-y-12">
           <div className="space-y-3 text-center max-w-3xl mx-auto">
             <span className="font-serif text-xs tracking-[0.3em] uppercase text-sky-300/80 drop-shadow">
-              06. Writing, Blogs &amp; Community
+              06. Writing &amp; Insights
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-white">
-              Ideas, Experiments, and Open Community Stories
+              Ideas, Experiments, and Lessons From Building
             </h2>
             <p className="text-sm text-zinc-300 max-w-xl mx-auto">
-              Documenting what I&apos;m learning about entrepreneurship, software development, artificial intelligence, and building from Zimbabwe. Open for anyone to publish.
+              Documenting what I&apos;m learning about entrepreneurship, software development, artificial intelligence, and building from Zimbabwe.
             </p>
-          </div>
 
-          {/* Open Publishing Action Banner */}
-          <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-sky-950/40 via-[#0F172A] to-indigo-950/30 border border-sky-500/20 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
-            <div className="space-y-1.5 text-center sm:text-left">
-              <div className="flex items-center justify-center sm:justify-start gap-2 text-sky-400 text-xs font-mono">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Open for all creators &amp; builders</span>
-              </div>
-              <h3 className="font-serif text-xl sm:text-2xl text-white">
-                Write a Blog on TanakaGaadzikwa.com
-              </h3>
-              <p className="text-xs text-zinc-400 max-w-md">
-                Anyone can post: add a title, upload a picture, write your story, and share it with founders worldwide.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="pt-2 flex items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={() => setIsWriteBlogOpen(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-400 to-sky-600 hover:from-sky-300 hover:to-sky-500 text-black font-semibold text-xs uppercase tracking-wider transition-all shadow-md shadow-sky-500/20 cursor-pointer"
+                className="liquid-glass-button px-4 py-2 font-serif text-xs tracking-[0.2em] uppercase text-white rounded-xl flex items-center gap-2 cursor-pointer shadow-md"
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                <span>+ Write a Blog</span>
+                <span>Write a Blog</span>
               </button>
+
               {onNavigateToBlogs && (
                 <button
                   type="button"
                   onClick={onNavigateToBlogs}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#111A2E] hover:bg-[#1A2744] text-white border border-[#1E293B] text-xs font-medium transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-serif tracking-[0.2em] uppercase text-zinc-400 hover:text-white transition-colors cursor-pointer"
                 >
-                  <span>Explore Blogs</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  View Blogs ({blogs.length})
                 </button>
               )}
             </div>
           </div>
 
-          {/* Featured Latest Stories Grid */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-serif text-lg text-white flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-sky-400" />
-                <span>Latest Stories &amp; Articles</span>
+          {/* User-Written Blogs (Only displayed if blogs have been written) */}
+          {blogs.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-serif text-xl text-white text-center sm:text-left">
+                Community Blogs
               </h3>
-              {onNavigateToBlogs && (
-                <button
-                  type="button"
-                  onClick={onNavigateToBlogs}
-                  className="text-xs font-mono text-sky-400 hover:text-sky-300 flex items-center gap-1 cursor-pointer"
-                >
-                  <span>View all ({blogs.length})</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {blogs.slice(0, 3).map((blog) => (
-                <article
-                  key={blog.id}
-                  onClick={() => setSelectedBlogPost(blog)}
-                  className="group flex flex-col rounded-2xl overflow-hidden border border-[#1E293B] bg-[#0E1526] hover:border-sky-500/40 hover:-translate-y-1 transition-all duration-300 shadow-lg cursor-pointer"
-                >
-                  <div className="relative aspect-[16/9] w-full overflow-hidden bg-black">
-                    <img
-                      src={blog.imageUrl}
-                      alt={blog.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-[0.9]"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0E1526] via-transparent to-transparent opacity-80" />
-                    <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-black/70 backdrop-blur-md text-sky-300 border border-white/10">
-                      {blog.category}
-                    </span>
-                    {blog.isCommunityPost && (
-                      <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/30 backdrop-blur-md text-emerald-200 border border-emerald-400/40">
-                        Community
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-400">
-                        <Clock className="w-3 h-3 text-sky-400" />
-                        <span>{blog.readTime}</span>
-                        <span>·</span>
-                        <span>{blog.publishedDate}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {blogs.map((blog) => (
+                  <article
+                    key={blog.id}
+                    onClick={() => setSelectedBlogPost(blog)}
+                    className="liquid-glass-card rounded-2xl overflow-hidden border-[#1E293B]/80 hover:border-sky-500/40 transition-all duration-300 cursor-pointer flex flex-col justify-between"
+                  >
+                    {blog.imageUrl && (
+                      <div className="aspect-[16/9] w-full overflow-hidden bg-black/40">
+                        <img 
+                          src={blog.imageUrl} 
+                          alt={blog.title} 
+                          className="w-full h-full object-cover filter brightness-90"
+                        />
                       </div>
-                      <h4 className="font-serif text-base text-white group-hover:text-sky-200 transition-colors line-clamp-2 leading-snug">
-                        {blog.title}
-                      </h4>
-                      <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
-                        {blog.excerpt}
-                      </p>
+                    )}
+                    <div className="p-6 space-y-2 flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="text-[11px] font-mono text-zinc-400 mb-1">
+                          {blog.publishedDate} · {blog.readTime}
+                        </div>
+                        <h4 className="font-serif text-lg text-white leading-snug">
+                          {blog.title}
+                        </h4>
+                        <p className="text-xs text-zinc-300 line-clamp-2 mt-1 leading-relaxed">
+                          {blog.excerpt}
+                        </p>
+                      </div>
+                      <div className="pt-3 border-t border-[#1E293B]/60 flex items-center justify-between text-xs text-zinc-400">
+                        <span>By {blog.author}</span>
+                        <span className="text-sky-400">Read Blog →</span>
+                      </div>
                     </div>
-
-                    <div className="pt-3 border-t border-[#1E293B]/80 flex items-center justify-between text-xs">
-                      <span className="text-zinc-300 font-medium truncate max-w-[130px]">
-                        {blog.author}
-                      </span>
-                      <span className="flex items-center gap-1 text-[11px] font-mono text-zinc-400">
-                        <Heart className="w-3 h-3 text-red-400 fill-red-400/20" />
-                        {blog.likes}
-                      </span>
-                    </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="liquid-glass-card p-6 sm:p-8 rounded-2xl space-y-3 border-[#1E293B]/80">
               <h3 className="font-serif text-xl text-white">Entrepreneurship</h3>
               <p className="text-xs text-zinc-300 leading-relaxed">

@@ -111,10 +111,9 @@ export const Hero: React.FC<HeroProps> = ({
           </button>
           <button
             onClick={() => onNavigateToBlogs ? onNavigateToBlogs() : onNavigate('writing')}
-            className="text-sky-300 hover:text-white transition-colors uppercase whitespace-nowrap shrink-0 cursor-pointer flex items-center gap-1 font-semibold"
+            className="hover:text-white transition-colors uppercase whitespace-nowrap shrink-0 cursor-pointer"
           >
-            <span>Blogs</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+            Blogs
           </button>
           <button
             onClick={() => onNavigate('writing')}

@@ -302,24 +302,23 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
               </div>
             )}
 
-            {/* Bottom Engagement Banner */}
-            <div className="mt-12 p-8 rounded-3xl bg-gradient-to-br from-[#111A2E] to-[#0A101D] border border-sky-500/20 space-y-4 text-center">
-              <Sparkles className="w-8 h-8 text-sky-400 mx-auto" />
-              <h3 className="font-serif text-2xl text-white font-normal">
-                Have a perspective to share with Tanaka and fellow builders?
+            {/* Bottom Normal Card */}
+            <div className="mt-12 p-6 rounded-2xl liquid-glass-card border-[#1E293B]/80 text-center space-y-3">
+              <h3 className="font-serif text-lg text-white font-normal">
+                Have a blog or story to share?
               </h3>
-              <p className="text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
-                Publishing is open to all builders, developers, and founders. You can write your own story, attach your project cover image, and inspire creators worldwide.
+              <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                Anyone can publish a blog with a title, picture, and body.
               </p>
-              <div className="pt-2">
+              <div>
                 <button
                   onClick={() => {
                     onClose();
                     onOpenWriteBlog();
                   }}
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-sky-400 to-sky-600 hover:from-sky-300 hover:to-sky-500 text-black font-semibold text-xs uppercase tracking-wider transition-all shadow-lg shadow-sky-500/20 cursor-pointer"
+                  className="liquid-glass-button px-4 py-2 text-xs font-serif tracking-[0.2em] uppercase text-white rounded-xl inline-flex items-center gap-2 cursor-pointer"
                 >
-                  Write &amp; Publish Your Story →
+                  <span>Write a Blog</span>
                 </button>
               </div>
             </div>
