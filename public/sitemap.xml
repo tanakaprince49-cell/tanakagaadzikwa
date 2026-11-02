@@ -69,7 +69,12 @@
     <loc>https://www.tanakagaadzikwa.com/blogs</loc>
     <lastmod>2026-11-02</lastmod>
     <changefreq>daily</changefreq>
-    <priority>0.9</priority>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://i.ibb.co/pvvN63sV/20260526-181511.webp</image:loc>
+      <image:title>Tanaka Gaadzikwa Blogs &amp; Open Community Stories</image:title>
+      <image:caption>Tech, AI, software engineering, and startup creation articles and community blogs by Tanaka Gaadzikwa.</image:caption>
+    </image:image>
   </url>
   <url>
     <loc>https://www.tanakagaadzikwa.com/contact</loc>

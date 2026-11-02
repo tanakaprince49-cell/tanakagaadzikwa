@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
 import { toggleLikeBlog, hasUserLiked, deleteCommunityBlog } from '../data/blogsData';
+import { setSingleBlogSeo } from '../utils/seo';
 
 interface BlogReaderModalProps {
   post: BlogPost | null;
@@ -33,6 +34,10 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
   const [likes, setLikes] = useState(post.likes);
   const [isLiked, setIsLiked] = useState(() => hasUserLiked(post.id));
   const [copied, setCopied] = useState(false);
+
+  React.useEffect(() => {
+    setSingleBlogSeo(post);
+  }, [post]);
 
   const handleLike = () => {
     const res = toggleLikeBlog(post.id);
@@ -141,7 +146,8 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
             <div className="relative w-full aspect-[21/10] sm:aspect-[24/10] overflow-hidden bg-zinc-100">
               <img 
                 src={post.imageUrl} 
-                alt={post.title}
+                alt={`${post.title} - Cover Photo by ${post.author}`}
+                itemProp="image"
                 className="w-full h-full object-cover"
               />
             </div>

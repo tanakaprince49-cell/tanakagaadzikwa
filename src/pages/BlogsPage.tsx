@@ -17,6 +17,7 @@ import { getCurrentUser, signOut } from '../data/authData';
 import { WriteBlogModal } from '../components/WriteBlogModal';
 import { BlogReaderModal } from '../components/BlogReaderModal';
 import { AuthModal } from '../components/AuthModal';
+import { setBlogsHubSeo, setSingleBlogSeo, resetHomeSeo } from '../utils/seo';
 
 interface BlogsPageProps {
   onNavigateHome: () => void;
@@ -33,6 +34,18 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+
+  // Super SEO Sync Effect
+  useEffect(() => {
+    if (selectedPost) {
+      setSingleBlogSeo(selectedPost);
+    } else {
+      setBlogsHubSeo(blogs.length);
+    }
+    return () => {
+      resetHomeSeo();
+    };
+  }, [selectedPost, blogs.length]);
 
   // Sync on blog creation / updates
   useEffect(() => {
@@ -243,6 +256,8 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
             {filteredBlogs.map((blog) => (
               <article
                 key={blog.id}
+                itemScope
+                itemType="https://schema.org/BlogPosting"
                 onClick={() => setSelectedPost(blog)}
                 className="bg-white border border-zinc-200 hover:border-zinc-400 rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between cursor-pointer group shadow-sm hover:shadow-md"
               >
@@ -250,7 +265,9 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                   <div className="aspect-[16/9] w-full overflow-hidden bg-zinc-100">
                     <img 
                       src={blog.imageUrl} 
-                      alt={blog.title} 
+                      alt={`${blog.title} - Cover photo by ${blog.author}`}
+                      itemProp="image"
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>
