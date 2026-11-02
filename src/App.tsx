@@ -42,6 +42,12 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const isBlogsRoute = currentPath === '/blogs' || currentPath === '/blog' || currentPath.startsWith('/blogs/');
 
   return (
@@ -59,8 +65,12 @@ export default function App() {
       <Footer />
 
       {/* Vercel Tracking & Insights */}
-      <Analytics />
-      <SpeedInsights />
+      {isMounted && (
+        <>
+          <Analytics />
+          <SpeedInsights />
+        </>
+      )}
     </div>
   );
 }

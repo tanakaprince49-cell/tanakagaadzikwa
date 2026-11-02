@@ -40,60 +40,78 @@ const CATEGORIES = [
 export const renderInlineFormatting = (text: string) => {
   if (!text) return null;
   const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
-      return <strong key={i} className="font-bold text-zinc-900">{part.slice(2, -2)}</strong>;
-    }
-    if (part.startsWith('*') && part.endsWith('*') && part.length >= 2) {
-      return <em key={i} className="italic">{part.slice(1, -1)}</em>;
-    }
-    return part;
-  });
+  const formatted = parts
+    .map((part, i) => {
+      if (!part) return null;
+      if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+        return (
+          <strong key={`b-${i}`} className="font-bold text-zinc-900">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (part.startsWith('*') && part.endsWith('*') && part.length >= 2) {
+        return (
+          <em key={`i-${i}`} className="italic">
+            {part.slice(1, -1)}
+          </em>
+        );
+      }
+      return <React.Fragment key={`t-${i}`}>{part}</React.Fragment>;
+    })
+    .filter(Boolean);
+
+  return formatted.length > 0 ? formatted : null;
 };
 
 export const renderFormattedBody = (bodyText: string) => {
   if (!bodyText) return null;
 
-  return bodyText.split('\n\n').map((paragraph, idx) => {
-    const trimmed = paragraph.trim();
-    if (!trimmed) return null;
+  const blocks = bodyText
+    .split(/\n\s*\n/)
+    .map((paragraph, idx) => {
+      const trimmed = paragraph.trim();
+      if (!trimmed) return null;
 
-    if (trimmed.startsWith('### ')) {
+      if (trimmed.startsWith('### ')) {
+        return (
+          <h3 key={`h3-${idx}`} className="font-serif text-xl sm:text-2xl text-zinc-900 pt-3 pb-1 font-semibold">
+            {renderInlineFormatting(trimmed.replace('### ', ''))}
+          </h3>
+        );
+      }
+
+      if (trimmed.startsWith('> ')) {
+        return (
+          <blockquote 
+            key={`bq-${idx}`} 
+            className="border-l-4 border-zinc-900 pl-4 py-1 italic text-zinc-700 bg-zinc-50 rounded-r-xl my-2"
+          >
+            {renderInlineFormatting(trimmed.replace(/^>\s*/, '').replace(/^"|"$/g, ''))}
+          </blockquote>
+        );
+      }
+
+      if (trimmed.startsWith('- ')) {
+        const items = trimmed.split('\n- ');
+        return (
+          <ul key={`ul-${idx}`} className="space-y-1.5 pl-6 list-disc text-zinc-800 my-3">
+            {items.map((item, i) => (
+              <li key={`li-${idx}-${i}`}>{renderInlineFormatting(item.replace(/^- /, ''))}</li>
+            ))}
+          </ul>
+        );
+      }
+
       return (
-        <h3 key={idx} className="font-serif text-xl sm:text-2xl text-zinc-900 pt-3 pb-1 font-semibold">
-          {renderInlineFormatting(trimmed.replace('### ', ''))}
-        </h3>
+        <p key={`p-${idx}`} className="leading-relaxed">
+          {renderInlineFormatting(trimmed)}
+        </p>
       );
-    }
+    })
+    .filter(Boolean);
 
-    if (trimmed.startsWith('> ')) {
-      return (
-        <blockquote 
-          key={idx} 
-          className="border-l-4 border-zinc-900 pl-4 py-1 italic text-zinc-700 bg-zinc-50 rounded-r-xl my-2"
-        >
-          {renderInlineFormatting(trimmed.replace(/^>\s*/, '').replace(/^"|"$/g, ''))}
-        </blockquote>
-      );
-    }
-
-    if (trimmed.startsWith('- ')) {
-      const items = trimmed.split('\n- ');
-      return (
-        <ul key={idx} className="space-y-1.5 pl-6 list-disc text-zinc-800 my-3">
-          {items.map((item, i) => (
-            <li key={i}>{renderInlineFormatting(item.replace(/^- /, ''))}</li>
-          ))}
-        </ul>
-      );
-    }
-
-    return (
-      <p key={idx} className="leading-relaxed">
-        {renderInlineFormatting(trimmed)}
-      </p>
-    );
-  });
+  return blocks.length > 0 ? blocks : null;
 };
 
 export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ 
