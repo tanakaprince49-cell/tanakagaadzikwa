@@ -20,6 +20,7 @@ interface BlogReaderModalProps {
   onOpenWriteBlog: () => void;
   onPostDeleted?: (id: string) => void;
   currentUser?: UserProfile | null;
+  onSelectAuthor?: (authorName: string) => void;
 }
 
 export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({ 
@@ -27,7 +28,8 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
   onClose, 
   onOpenWriteBlog,
   onPostDeleted,
-  currentUser
+  currentUser,
+  onSelectAuthor
 }) => {
   if (!post) return null;
 
@@ -179,12 +181,19 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
 
             {/* Author Profile Card */}
             <div className="flex items-center justify-between p-4 rounded-2xl bg-zinc-50 border border-zinc-200">
-              <div className="flex items-center gap-3">
+              <div 
+                className={`flex items-center gap-3 ${onSelectAuthor ? 'cursor-pointer group/author' : ''}`}
+                onClick={() => {
+                  if (onSelectAuthor) {
+                    onSelectAuthor(post.author);
+                  }
+                }}
+              >
                 {post.authorAvatar ? (
                   <img 
                     src={post.authorAvatar} 
                     alt={post.author} 
-                    className="w-11 h-11 rounded-full object-cover border border-zinc-300 shadow-sm"
+                    className="w-11 h-11 rounded-full object-cover border border-zinc-300 shadow-sm group-hover/author:border-zinc-900 transition-colors"
                   />
                 ) : (
                   <div className="w-11 h-11 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-sm">
@@ -192,11 +201,16 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
                   </div>
                 )}
                 <div>
-                  <div className="text-sm font-bold text-zinc-900">
-                    {post.author}
+                  <div className="text-sm font-bold text-zinc-900 group-hover/author:text-black flex items-center gap-1.5">
+                    <span>{post.author}</span>
+                    {onSelectAuthor && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-200/70 text-zinc-700 font-medium">
+                        View all blogs
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-zinc-500">
-                    Published Author
+                    Recognized Author Profile
                   </div>
                 </div>
               </div>

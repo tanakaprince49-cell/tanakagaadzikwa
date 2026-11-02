@@ -7,9 +7,12 @@ import {
   Clock, 
   ArrowRight,
   BookOpen,
-  User,
   LogOut,
-  LogIn
+  X,
+  Sparkles,
+  Tag,
+  CheckCircle2,
+  ExternalLink
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
 import { getStoredBlogs } from '../data/blogsData';
@@ -17,7 +20,7 @@ import { getCurrentUser, signOut } from '../data/authData';
 import { WriteBlogModal } from '../components/WriteBlogModal';
 import { BlogReaderModal } from '../components/BlogReaderModal';
 import { AuthModal } from '../components/AuthModal';
-import { setBlogsHubSeo, setSingleBlogSeo, resetHomeSeo } from '../utils/seo';
+import { setBlogsHubSeo, setSingleBlogSeo, setAuthorPageSeo, resetHomeSeo } from '../utils/seo';
 
 interface BlogsPageProps {
   onNavigateHome: () => void;
@@ -29,23 +32,22 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
   const [searchQuery, setSearchQuery] = useState('');
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => getCurrentUser());
   
+  // Filtering states
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedAuthor, setSelectedAuthor] = useState<string | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('author');
+    } catch {
+      return null;
+    }
+  });
+
   // Modals
   const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signup');
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
-
-  // Super SEO Sync Effect
-  useEffect(() => {
-    if (selectedPost) {
-      setSingleBlogSeo(selectedPost);
-    } else {
-      setBlogsHubSeo(blogs.length);
-    }
-    return () => {
-      resetHomeSeo();
-    };
-  }, [selectedPost, blogs.length]);
 
   // Sync on blog creation / updates
   useEffect(() => {
@@ -65,6 +67,24 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
     return () => window.removeEventListener('tg_auth_changed', handleAuthChange);
   }, []);
 
+  // Sync popstate for browser back/forward buttons with author & hash
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      setSelectedAuthor(params.get('author'));
+      
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        const match = blogs.find((b) => b.slug === hash || b.id === hash);
+        if (match) setSelectedPost(match);
+      } else {
+        setSelectedPost(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [blogs]);
+
   // Handle direct slug / hash link
   useEffect(() => {
     const checkSlug = initialPostSlug || (window.location.hash ? window.location.hash.replace('#', '') : null);
@@ -76,16 +96,88 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
     }
   }, [initialPostSlug, blogs]);
 
-  // Filtered blogs
-  const filteredBlogs = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return blogs;
-    return blogs.filter((blog) => 
-      blog.title.toLowerCase().includes(q) ||
-      blog.body.toLowerCase().includes(q) ||
-      blog.author.toLowerCase().includes(q)
+  // Dynamic Categories gathered from all published blogs (including any custom user categories)
+  const dynamicCategories = useMemo(() => {
+    const counts: Record<string, number> = {};
+    blogs.forEach((b) => {
+      const cat = b.category ? b.category.trim() : 'General';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+
+    const categoriesList = Object.keys(counts).map((cat) => ({
+      name: cat,
+      count: counts[cat],
+    }));
+
+    return categoriesList;
+  }, [blogs]);
+
+  // Details for currently selected author (if any)
+  const authorProfile = useMemo(() => {
+    if (!selectedAuthor) return null;
+    const authorBlogs = blogs.filter(
+      (b) => b.author.toLowerCase() === selectedAuthor.toLowerCase()
     );
-  }, [blogs, searchQuery]);
+    const firstWithAvatar = authorBlogs.find((b) => b.authorAvatar)?.authorAvatar;
+    return {
+      name: selectedAuthor,
+      avatarUrl: firstWithAvatar || (currentUser?.name && selectedAuthor.includes(currentUser.name) ? currentUser.avatarUrl : undefined),
+      count: authorBlogs.length,
+    };
+  }, [selectedAuthor, blogs, currentUser]);
+
+  // Super SEO Synchronization
+  useEffect(() => {
+    if (selectedPost) {
+      setSingleBlogSeo(selectedPost);
+    } else if (selectedAuthor && authorProfile) {
+      setAuthorPageSeo(authorProfile.name, authorProfile.avatarUrl, authorProfile.count);
+    } else {
+      setBlogsHubSeo(blogs.length);
+    }
+    return () => {
+      resetHomeSeo();
+    };
+  }, [selectedPost, selectedAuthor, authorProfile, blogs.length]);
+
+  // Combined Filtered Blogs (Search + Category + Author)
+  const filteredBlogs = useMemo(() => {
+    return blogs.filter((blog) => {
+      // Author filter
+      if (selectedAuthor && blog.author.toLowerCase() !== selectedAuthor.toLowerCase()) {
+        return false;
+      }
+      // Category filter
+      if (selectedCategory !== 'All' && (blog.category || 'General').toLowerCase() !== selectedCategory.toLowerCase()) {
+        return false;
+      }
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchTitle = blog.title.toLowerCase().includes(q);
+        const matchBody = blog.body.toLowerCase().includes(q);
+        const matchAuthor = blog.author.toLowerCase().includes(q);
+        const matchCategory = (blog.category || '').toLowerCase().includes(q);
+        return matchTitle || matchBody || matchAuthor || matchCategory;
+      }
+      return true;
+    });
+  }, [blogs, selectedAuthor, selectedCategory, searchQuery]);
+
+  const handleSelectAuthor = (authorName: string | null) => {
+    setSelectedAuthor(authorName);
+    try {
+      const url = new URL(window.location.href);
+      if (authorName) {
+        url.searchParams.set('author', authorName);
+      } else {
+        url.searchParams.delete('author');
+      }
+      window.history.pushState({}, '', url.pathname + url.search + url.hash);
+    } catch {
+      // Ignore if SSR or non-standard environment
+    }
+  };
 
   const handlePostCreated = (newPost: BlogPost) => {
     setBlogs(getStoredBlogs());
@@ -135,7 +227,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                 </span>
                 <button
                   onClick={handleSignOut}
-                  className="text-zinc-400 hover:text-zinc-700 p-1"
+                  className="text-zinc-400 hover:text-zinc-700 p-1 cursor-pointer"
                   title="Sign Out"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -176,20 +268,22 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
         </div>
       </header>
 
-      {/* Hero Section - Clean Crisp White */}
-      <section className="relative w-full py-16 sm:py-20 border-b border-zinc-200 bg-zinc-50/60 px-6 lg:px-8">
+      {/* Hero Section - Clean White */}
+      <section className="relative w-full py-12 sm:py-16 border-b border-zinc-200 bg-zinc-50/70 px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center space-y-3">
-          <span className="font-serif text-xs tracking-[0.3em] uppercase text-zinc-500 font-semibold">
-            Writing &amp; Community
-          </span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Super SEO Active · Indexed on Google &amp; Search Engines</span>
+          </div>
+
           <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-semibold text-zinc-900 tracking-tight">
-            Blogs
+            Blogs &amp; Stories
           </h1>
           <p className="text-sm sm:text-base text-zinc-600 max-w-lg mx-auto leading-relaxed">
-            Create an account to write your own blog with a title, picture, and thoughts.
+            Publish stories, custom categories, and personal perspectives. Authors get their own recognized Super SEO profile indexed on Google.
           </p>
 
-          <div className="pt-3">
+          <div className="pt-2">
             <button
               onClick={handleOpenWrite}
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-zinc-900 hover:bg-black text-white transition-colors text-xs font-semibold uppercase tracking-wider cursor-pointer shadow-sm"
@@ -202,21 +296,147 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
       </section>
 
       {/* Main Content Area */}
-      <main className="max-w-5xl mx-auto w-full px-6 lg:px-8 py-12 space-y-8 flex-1">
+      <main className="max-w-5xl mx-auto w-full px-6 lg:px-8 py-10 space-y-8 flex-1">
         
-        {/* Search Bar */}
-        {blogs.length > 0 && (
-          <div className="max-w-md mx-auto">
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search blogs..."
-                className="w-full pl-10 pr-4 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all"
-              />
+        {/* Active Author Super SEO Banner */}
+        {authorProfile && (
+          <div className="bg-gradient-to-r from-zinc-50 via-white to-zinc-50 border-2 border-zinc-900/10 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                {authorProfile.avatarUrl ? (
+                  <img 
+                    src={authorProfile.avatarUrl} 
+                    alt={authorProfile.name} 
+                    className="w-16 h-16 rounded-full object-cover border-2 border-zinc-900 shadow-sm"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-2xl shadow-sm">
+                    {authorProfile.name[0]?.toUpperCase() || 'A'}
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl sm:text-2xl font-serif font-bold text-zinc-900">
+                      {authorProfile.name}
+                    </h2>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <span>Verified Author</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-600">
+                    {authorProfile.count} {authorProfile.count === 1 ? 'published blog' : 'published blogs'} on TanakaGaadzikwa.com
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleSelectAuthor(null)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 transition-colors self-start sm:self-center cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Show All Authors</span>
+              </button>
             </div>
+
+            {/* SEO Badge */}
+            <div className="pt-2 border-t border-zinc-200/70 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
+              <div className="flex items-center gap-1.5 text-emerald-700 font-medium">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Google Super SEO: Author Profile &amp; Schema.org Person indexed</span>
+              </div>
+              <span className="font-mono text-[11px] text-zinc-400">
+                URL: https://www.tanakagaadzikwa.com/blogs?author={encodeURIComponent(authorProfile.name)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Search & Dynamic Category Filter Row */}
+        {blogs.length > 0 && (
+          <div className="space-y-4">
+            
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              {/* Search Bar */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by title, body, author, or category..."
+                  className="w-full pl-10 pr-4 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Reset Filters Shortcut */}
+              {(selectedCategory !== 'All' || selectedAuthor || searchQuery) && (
+                <button
+                  onClick={() => {
+                    setSelectedCategory('All');
+                    handleSelectAuthor(null);
+                    setSearchQuery('');
+                  }}
+                  className="text-xs font-semibold text-zinc-600 hover:text-black flex items-center gap-1 underline self-end sm:self-center cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Reset All Filters</span>
+                </button>
+              )}
+            </div>
+
+            {/* Dynamic Category Filter Pills */}
+            {dynamicCategories.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-semibold uppercase tracking-wider">
+                  <Tag className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>Categories ({dynamicCategories.length})</span>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory('All')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                      selectedCategory === 'All'
+                        ? 'bg-zinc-900 text-white shadow-xs'
+                        : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                    }`}
+                  >
+                    All ({blogs.length})
+                  </button>
+
+                  {dynamicCategories.map((cat) => (
+                    <button
+                      key={cat.name}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat.name)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        selectedCategory === cat.name
+                          ? 'bg-zinc-900 text-white shadow-xs'
+                          : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                      }`}
+                    >
+                      <span>{cat.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                        selectedCategory === cat.name ? 'bg-zinc-700 text-white' : 'bg-zinc-200 text-zinc-600'
+                      }`}>
+                        {cat.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
@@ -243,12 +463,16 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
           </div>
         ) : filteredBlogs.length === 0 ? (
           <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center space-y-3 max-w-md mx-auto shadow-sm">
-            <p className="text-sm text-zinc-700">No blogs match &ldquo;{searchQuery}&rdquo;</p>
+            <p className="text-sm text-zinc-700">No blogs match the current filters.</p>
             <button
-              onClick={() => setSearchQuery('')}
-              className="text-xs text-zinc-900 font-semibold underline"
+              onClick={() => {
+                setSelectedCategory('All');
+                handleSelectAuthor(null);
+                setSearchQuery('');
+              }}
+              className="text-xs text-zinc-900 font-semibold underline cursor-pointer"
             >
-              Clear search
+              Clear all filters
             </button>
           </div>
         ) : (
@@ -273,14 +497,32 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                   </div>
                 )}
 
-                <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
+                <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                  <div className="space-y-2.5">
+                    {/* Category & Time row */}
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCategory(blog.category || 'General');
+                        }}
+                        className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-800 transition-colors cursor-pointer"
+                        title={`Filter by category ${blog.category}`}
+                      >
+                        {blog.category || 'General'}
+                      </button>
+
+                      <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
+                        <Clock className="w-3 h-3 text-zinc-400" />
+                        <span>{blog.readTime}</span>
+                      </div>
+                    </div>
+
+                    {/* Date */}
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-400">
                       <Calendar className="w-3 h-3 text-zinc-400" />
                       <span>{blog.publishedDate}</span>
-                      <span>·</span>
-                      <Clock className="w-3 h-3 text-zinc-400" />
-                      <span>{blog.readTime}</span>
                     </div>
 
                     <h3 className="font-serif text-xl font-medium text-zinc-900 group-hover:text-black transition-colors leading-snug">
@@ -292,20 +534,33 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                     </p>
                   </div>
 
+                  {/* Author Card Footer (Clickable for Author Super SEO & recognition) */}
                   <div className="pt-4 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500">
-                    <div className="flex items-center gap-2">
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectAuthor(blog.author);
+                      }}
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group/author"
+                      title={`Click to view ${blog.author}'s profile & articles`}
+                    >
                       {blog.authorAvatar ? (
                         <img 
                           src={blog.authorAvatar} 
                           alt={blog.author} 
-                          className="w-6 h-6 rounded-full object-cover border border-zinc-200"
+                          className="w-6 h-6 rounded-full object-cover border border-zinc-200 group-hover/author:border-zinc-900"
                         />
                       ) : (
                         <div className="w-6 h-6 rounded-full bg-zinc-800 text-white flex items-center justify-center text-[10px] font-bold">
                           {blog.author[0]?.toUpperCase() || 'U'}
                         </div>
                       )}
-                      <span className="font-medium text-zinc-800">{blog.author}</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-zinc-900 group-hover/author:underline">
+                          {blog.author}
+                        </span>
+                        <span className="text-[10px] text-zinc-400">Author Profile</span>
+                      </div>
                     </div>
 
                     <span className="text-zinc-900 font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
@@ -351,12 +606,20 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
         onClose={() => {
           setSelectedPost(null);
           if (window.location.hash) {
-            history.pushState(null, '', window.location.pathname);
+            try {
+              history.pushState(null, '', window.location.pathname + window.location.search);
+            } catch {
+              // Ignore
+            }
           }
         }}
         onOpenWriteBlog={handleOpenWrite}
         onPostDeleted={() => setBlogs(getStoredBlogs())}
         currentUser={currentUser}
+        onSelectAuthor={(authorName) => {
+          setSelectedPost(null);
+          handleSelectAuthor(authorName);
+        }}
       />
 
     </div>

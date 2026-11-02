@@ -48,6 +48,8 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
   // Form State
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState(CATEGORIES[0]);
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [body, setBody] = useState('');
   const [customReadTime, setCustomReadTime] = useState('');
@@ -136,6 +138,12 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
       return;
     }
 
+    const finalCategory = (isCustomCategory ? customCategoryInput.trim() : category.trim()) || 'General';
+    if (isCustomCategory && !customCategoryInput.trim()) {
+      setErrorMessage('Please enter your custom category name.');
+      return;
+    }
+
     if (!imageUrl) {
       setErrorMessage('Please upload a cover picture for your blog.');
       return;
@@ -157,7 +165,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
         body,
         imageUrl,
         author: authorFullName,
-        category,
+        category: finalCategory,
         readTime: finalReadTime,
       });
 
@@ -177,6 +185,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
 
   const wordCount = body.trim() ? body.trim().split(/\s+/).length : 0;
   const estimatedRead = customReadTime.trim() || calculateReadTime(body);
+  const activeCategory = (isCustomCategory ? customCategoryInput.trim() : category) || 'General';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150">
@@ -307,20 +316,59 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
               {/* Category & Read Time Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
-                    Category *
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-zinc-900 focus:bg-white cursor-pointer"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                      Category *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomCategory(!isCustomCategory);
+                        if (!isCustomCategory && !customCategoryInput) {
+                          setCustomCategoryInput('');
+                        }
+                      }}
+                      className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                    >
+                      {isCustomCategory ? '← Pick from list' : '+ Add custom category'}
+                    </button>
+                  </div>
+
+                  {isCustomCategory ? (
+                    <div className="space-y-1">
+                      <input
+                        type="text"
+                        value={customCategoryInput}
+                        onChange={(e) => setCustomCategoryInput(e.target.value)}
+                        placeholder="e.g. Artificial Intelligence, Neuroscience, Web3..."
+                        className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-emerald-500 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white transition-all"
+                        required
+                        autoFocus
+                      />
+                      <p className="text-[10px] text-emerald-700 font-medium">
+                        ✓ Registered across platform &amp; automatically added to Super SEO metadata
+                      </p>
+                    </div>
+                  ) : (
+                    <select
+                      value={category}
+                      onChange={(e) => {
+                        if (e.target.value === '__custom__') {
+                          setIsCustomCategory(true);
+                        } else {
+                          setCategory(e.target.value);
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-zinc-900 focus:bg-white cursor-pointer"
+                    >
+                      {CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                      <option value="__custom__">+ Type custom category...</option>
+                    </select>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
@@ -511,7 +559,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                 <div className="p-6 sm:p-8 space-y-6">
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700">
-                      {category}
+                      {activeCategory}
                     </span>
                     <span className="text-xs text-zinc-500 font-mono">
                       · {estimatedRead}
