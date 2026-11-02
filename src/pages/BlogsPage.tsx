@@ -12,10 +12,10 @@ import {
   Sparkles,
   Tag,
   CheckCircle2,
-  ExternalLink
+  Trash2
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
-import { getStoredBlogs } from '../data/blogsData';
+import { getStoredBlogs, fetchServerBlogs, deleteCommunityBlog } from '../data/blogsData';
 import { getCurrentUser, signOut } from '../data/authData';
 import { WriteBlogModal } from '../components/WriteBlogModal';
 import { BlogReaderModal } from '../components/BlogReaderModal';
@@ -55,6 +55,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
       setBlogs(getStoredBlogs());
     };
     window.addEventListener('tg_blogs_updated', handleUpdate);
+    fetchServerBlogs().then((data) => setBlogs(data));
     return () => window.removeEventListener('tg_blogs_updated', handleUpdate);
   }, []);
 
@@ -96,7 +97,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
     }
   }, [initialPostSlug, blogs]);
 
-  // Dynamic Categories gathered from all published blogs (including any custom user categories)
+  // Dynamic Categories gathered from all published blogs
   const dynamicCategories = useMemo(() => {
     const counts: Record<string, number> = {};
     blogs.forEach((b) => {
@@ -104,12 +105,10 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
       counts[cat] = (counts[cat] || 0) + 1;
     });
 
-    const categoriesList = Object.keys(counts).map((cat) => ({
+    return Object.keys(counts).map((cat) => ({
       name: cat,
       count: counts[cat],
     }));
-
-    return categoriesList;
   }, [blogs]);
 
   // Details for currently selected author (if any)
@@ -119,9 +118,14 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
       (b) => b.author.toLowerCase() === selectedAuthor.toLowerCase()
     );
     const firstWithAvatar = authorBlogs.find((b) => b.authorAvatar)?.authorAvatar;
+    const firstWithBio = authorBlogs.find((b) => b.authorBio)?.authorBio;
+
+    const isCurrent = currentUser && `${currentUser.name} ${currentUser.surname}`.toLowerCase() === selectedAuthor.toLowerCase();
+
     return {
       name: selectedAuthor,
-      avatarUrl: firstWithAvatar || (currentUser?.name && selectedAuthor.includes(currentUser.name) ? currentUser.avatarUrl : undefined),
+      avatarUrl: firstWithAvatar || (isCurrent ? currentUser.avatarUrl : undefined),
+      bio: firstWithBio || (isCurrent ? currentUser.bio : undefined),
       count: authorBlogs.length,
     };
   }, [selectedAuthor, blogs, currentUser]);
@@ -140,18 +144,15 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
     };
   }, [selectedPost, selectedAuthor, authorProfile, blogs.length]);
 
-  // Combined Filtered Blogs (Search + Category + Author)
+  // Combined Filtered Blogs
   const filteredBlogs = useMemo(() => {
     return blogs.filter((blog) => {
-      // Author filter
       if (selectedAuthor && blog.author.toLowerCase() !== selectedAuthor.toLowerCase()) {
         return false;
       }
-      // Category filter
       if (selectedCategory !== 'All' && (blog.category || 'General').toLowerCase() !== selectedCategory.toLowerCase()) {
         return false;
       }
-      // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchTitle = blog.title.toLowerCase().includes(q);
@@ -175,13 +176,24 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
       }
       window.history.pushState({}, '', url.pathname + url.search + url.hash);
     } catch {
-      // Ignore if SSR or non-standard environment
+      // Ignore
     }
   };
 
   const handlePostCreated = (newPost: BlogPost) => {
     setBlogs(getStoredBlogs());
     setSelectedPost(newPost);
+  };
+
+  const handleDeleteBlog = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete your blog post?')) {
+      deleteCommunityBlog(id);
+      setBlogs(getStoredBlogs());
+      if (selectedPost?.id === id) {
+        setSelectedPost(null);
+      }
+    }
   };
 
   const handleOpenWrite = () => {
@@ -268,14 +280,9 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
         </div>
       </header>
 
-      {/* Hero Section - Clean White */}
+      {/* Hero Section - Clean White (Pinned element removed as requested) */}
       <section className="relative w-full py-12 sm:py-16 border-b border-zinc-200 bg-zinc-50/70 px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Super SEO Active · Indexed on Google &amp; Search Engines</span>
-          </div>
-
           <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-semibold text-zinc-900 tracking-tight">
             Blogs &amp; Stories
           </h1>
@@ -298,19 +305,19 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
       {/* Main Content Area */}
       <main className="max-w-5xl mx-auto w-full px-6 lg:px-8 py-10 space-y-8 flex-1">
         
-        {/* Active Author Super SEO Banner */}
+        {/* Active Author Profile Banner */}
         {authorProfile && (
           <div className="bg-gradient-to-r from-zinc-50 via-white to-zinc-50 border-2 border-zinc-900/10 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+              <div className="flex items-start sm:items-center gap-4">
                 {authorProfile.avatarUrl ? (
                   <img 
                     src={authorProfile.avatarUrl} 
                     alt={authorProfile.name} 
-                    className="w-16 h-16 rounded-full object-cover border-2 border-zinc-900 shadow-sm"
+                    className="w-16 h-16 rounded-full object-cover border-2 border-zinc-900 shadow-sm shrink-0"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-2xl shadow-sm">
+                  <div className="w-16 h-16 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-2xl shadow-sm shrink-0">
                     {authorProfile.name[0]?.toUpperCase() || 'A'}
                   </div>
                 )}
@@ -324,7 +331,12 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                       <span>Verified Author</span>
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-600">
+                  {authorProfile.bio && (
+                    <p className="text-xs text-zinc-700 leading-relaxed max-w-lg">
+                      {authorProfile.bio}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-zinc-500 font-mono">
                     {authorProfile.count} {authorProfile.count === 1 ? 'published blog' : 'published blogs'} on TanakaGaadzikwa.com
                   </p>
                 </div>
@@ -332,14 +344,13 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
 
               <button
                 onClick={() => handleSelectAuthor(null)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 transition-colors self-start sm:self-center cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 transition-colors self-start sm:self-center cursor-pointer shrink-0"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Show All Authors</span>
               </button>
             </div>
 
-            {/* SEO Badge */}
             <div className="pt-2 border-t border-zinc-200/70 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
               <div className="flex items-center gap-1.5 text-emerald-700 font-medium">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
@@ -477,100 +488,124 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredBlogs.map((blog) => (
-              <article
-                key={blog.id}
-                itemScope
-                itemType="https://schema.org/BlogPosting"
-                onClick={() => setSelectedPost(blog)}
-                className="bg-white border border-zinc-200 hover:border-zinc-400 rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between cursor-pointer group shadow-sm hover:shadow-md"
-              >
-                {blog.imageUrl && (
-                  <div className="aspect-[16/9] w-full overflow-hidden bg-zinc-100">
-                    <img 
-                      src={blog.imageUrl} 
-                      alt={`${blog.title} - Cover photo by ${blog.author}`}
-                      itemProp="image"
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                )}
+            {filteredBlogs.map((blog) => {
+              const currentFullName = currentUser ? `${currentUser.name} ${currentUser.surname}`.trim() : '';
+              const isOwner = blog.isCommunityPost && (
+                (currentUser && currentUser.email === blog.authorEmail) ||
+                (currentUser && currentFullName.toLowerCase() === blog.author.toLowerCase()) ||
+                !blog.authorEmail
+              );
 
-                <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
-                  <div className="space-y-2.5">
-                    {/* Category & Time row */}
-                    <div className="flex items-center justify-between gap-2">
-                      <button
-                        type="button"
+              return (
+                <article
+                  key={blog.id}
+                  itemScope
+                  itemType="https://schema.org/BlogPosting"
+                  onClick={() => setSelectedPost(blog)}
+                  className="bg-white border border-zinc-200 hover:border-zinc-400 rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between cursor-pointer group shadow-sm hover:shadow-md relative"
+                >
+                  {blog.imageUrl && (
+                    <div className="aspect-[16/9] w-full overflow-hidden bg-zinc-100">
+                      <img 
+                        src={blog.imageUrl} 
+                        alt={`${blog.title} - Cover photo by ${blog.author}`}
+                        itemProp="image"
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
+
+                  <div className="p-6 space-y-4 flex-1 flex flex-col justify-between">
+                    <div className="space-y-2.5">
+                      {/* Category & Time row */}
+                      <div className="flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCategory(blog.category || 'General');
+                          }}
+                          className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-800 transition-colors cursor-pointer"
+                          title={`Filter by category ${blog.category}`}
+                        >
+                          {blog.category || 'General'}
+                        </button>
+
+                        <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
+                          <Clock className="w-3 h-3 text-zinc-400" />
+                          <span>{blog.readTime}</span>
+                        </div>
+                      </div>
+
+                      {/* Date */}
+                      <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3 h-3 text-zinc-400" />
+                          <span>{blog.publishedDate}</span>
+                        </div>
+
+                        {/* Owner Delete button on card */}
+                        {isOwner && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteBlog(e, blog.id)}
+                            className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors cursor-pointer flex items-center gap-1 font-sans text-[11px]"
+                            title="Delete your blog post"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <h3 className="font-serif text-xl font-medium text-zinc-900 group-hover:text-black transition-colors leading-snug">
+                        {blog.title}
+                      </h3>
+
+                      <p className="text-xs text-zinc-600 line-clamp-3 leading-relaxed">
+                        {blog.excerpt}
+                      </p>
+                    </div>
+
+                    {/* Author Card Footer */}
+                    <div className="pt-4 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500">
+                      <div 
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedCategory(blog.category || 'General');
+                          handleSelectAuthor(blog.author);
                         }}
-                        className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-800 transition-colors cursor-pointer"
-                        title={`Filter by category ${blog.category}`}
+                        className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group/author"
+                        title={`Click to view ${blog.author}'s profile & articles`}
                       >
-                        {blog.category || 'General'}
-                      </button>
-
-                      <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
-                        <Clock className="w-3 h-3 text-zinc-400" />
-                        <span>{blog.readTime}</span>
-                      </div>
-                    </div>
-
-                    {/* Date */}
-                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-zinc-400">
-                      <Calendar className="w-3 h-3 text-zinc-400" />
-                      <span>{blog.publishedDate}</span>
-                    </div>
-
-                    <h3 className="font-serif text-xl font-medium text-zinc-900 group-hover:text-black transition-colors leading-snug">
-                      {blog.title}
-                    </h3>
-
-                    <p className="text-xs text-zinc-600 line-clamp-3 leading-relaxed">
-                      {blog.excerpt}
-                    </p>
-                  </div>
-
-                  {/* Author Card Footer (Clickable for Author Super SEO & recognition) */}
-                  <div className="pt-4 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500">
-                    <div 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectAuthor(blog.author);
-                      }}
-                      className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group/author"
-                      title={`Click to view ${blog.author}'s profile & articles`}
-                    >
-                      {blog.authorAvatar ? (
-                        <img 
-                          src={blog.authorAvatar} 
-                          alt={blog.author} 
-                          className="w-6 h-6 rounded-full object-cover border border-zinc-200 group-hover/author:border-zinc-900"
-                        />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-zinc-800 text-white flex items-center justify-center text-[10px] font-bold">
-                          {blog.author[0]?.toUpperCase() || 'U'}
+                        {blog.authorAvatar ? (
+                          <img 
+                            src={blog.authorAvatar} 
+                            alt={blog.author} 
+                            className="w-7 h-7 rounded-full object-cover border border-zinc-200 group-hover/author:border-zinc-900"
+                          />
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-zinc-800 text-white flex items-center justify-center text-[10px] font-bold">
+                            {blog.author[0]?.toUpperCase() || 'U'}
+                          </div>
+                        )}
+                        <div className="flex flex-col">
+                          <span className="font-medium text-zinc-900 group-hover/author:underline">
+                            {blog.author}
+                          </span>
+                          <span className="text-[10px] text-zinc-400">Author Profile</span>
                         </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="font-medium text-zinc-900 group-hover/author:underline">
-                          {blog.author}
-                        </span>
-                        <span className="text-[10px] text-zinc-400">Author Profile</span>
                       </div>
-                    </div>
 
-                    <span className="text-zinc-900 font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-                      <span>Read</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </span>
+                      <span className="text-zinc-900 font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                        <span>Read</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         )}
 

@@ -59,6 +59,7 @@ export interface BlogPost {
   authorRole?: string;
   authorAvatar?: string;
   authorEmail?: string;
+  authorBio?: string;
   category: string;
   publishedDate: string;
   readTime: string;
@@ -74,6 +75,7 @@ export interface UserProfile {
   surname: string;
   email: string;
   avatarUrl: string;
+  bio?: string;
   createdAt: string;
 }
 

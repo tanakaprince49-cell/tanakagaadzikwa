@@ -34,12 +34,14 @@ export function signUp(data: {
   email: string;
   password: string;
   avatarUrl: string;
+  bio?: string;
 }): { user?: UserProfile; error?: string } {
   const name = data.name.trim();
   const surname = data.surname.trim();
   const email = data.email.trim().toLowerCase();
   const password = data.password.trim();
   const avatarUrl = data.avatarUrl?.trim() || '';
+  const bio = data.bio?.trim() || '';
 
   if (!name) return { error: 'Please enter your first name.' };
   if (!surname) return { error: 'Please enter your surname.' };
@@ -59,17 +61,25 @@ export function signUp(data: {
     surname,
     email,
     avatarUrl,
+    bio,
     createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
   };
 
   const storedAccount: StoredAccount = {
     ...userProfile,
-    passwordHash: password, // client-side persistent storage
+    passwordHash: password,
   };
 
   const updatedUsers = [...users, storedAccount];
   localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(updatedUsers));
   localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userProfile));
+
+  // Sync with backend API
+  fetch('/api/auth/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, surname, email, password, avatarUrl, bio }),
+  }).catch((e) => console.warn('Auth server sync warning:', e));
 
   window.dispatchEvent(new CustomEvent('tg_auth_changed', { detail: userProfile }));
   return { user: userProfile };
@@ -100,10 +110,19 @@ export function signIn(emailInput: string, passwordInput: string): { user?: User
     surname: matched.surname,
     email: matched.email,
     avatarUrl: matched.avatarUrl,
+    bio: matched.bio,
     createdAt: matched.createdAt,
   };
 
   localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userProfile));
+
+  // Sync sign in with server
+  fetch('/api/auth/signin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  }).catch(() => {});
+
   window.dispatchEvent(new CustomEvent('tg_auth_changed', { detail: userProfile }));
   return { user: userProfile };
 }

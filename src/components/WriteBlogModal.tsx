@@ -1,11 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   X, 
   Upload, 
   ImageIcon, 
   Eye, 
   Edit3, 
-  Check, 
   AlertCircle,
   Clock,
   Bold,
@@ -13,10 +12,12 @@ import {
   Heading2,
   Quote,
   List,
-  Lock
+  Lock,
+  Sparkles
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
-import { saveNewBlog, calculateReadTime } from '../data/blogsData';
+import { saveNewBlog, calculateReadTime, PRESET_COVER_IMAGES } from '../data/blogsData';
+import { compressImageFile } from '../utils/imageCompressor';
 
 interface WriteBlogModalProps {
   isOpen: boolean;
@@ -35,6 +36,65 @@ const CATEGORIES = [
   'Building from Zimbabwe',
   'Product & Design',
 ];
+
+export const renderInlineFormatting = (text: string) => {
+  if (!text) return null;
+  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+      return <strong key={i} className="font-bold text-zinc-900">{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*') && part.length >= 2) {
+      return <em key={i} className="italic">{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+};
+
+export const renderFormattedBody = (bodyText: string) => {
+  if (!bodyText) return null;
+
+  return bodyText.split('\n\n').map((paragraph, idx) => {
+    const trimmed = paragraph.trim();
+    if (!trimmed) return null;
+
+    if (trimmed.startsWith('### ')) {
+      return (
+        <h3 key={idx} className="font-serif text-xl sm:text-2xl text-zinc-900 pt-3 pb-1 font-semibold">
+          {renderInlineFormatting(trimmed.replace('### ', ''))}
+        </h3>
+      );
+    }
+
+    if (trimmed.startsWith('> ')) {
+      return (
+        <blockquote 
+          key={idx} 
+          className="border-l-4 border-zinc-900 pl-4 py-1 italic text-zinc-700 bg-zinc-50 rounded-r-xl my-2"
+        >
+          {renderInlineFormatting(trimmed.replace(/^>\s*/, '').replace(/^"|"$/g, ''))}
+        </blockquote>
+      );
+    }
+
+    if (trimmed.startsWith('- ')) {
+      const items = trimmed.split('\n- ');
+      return (
+        <ul key={idx} className="space-y-1.5 pl-6 list-disc text-zinc-800 my-3">
+          {items.map((item, i) => (
+            <li key={i}>{renderInlineFormatting(item.replace(/^- /, ''))}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    return (
+      <p key={idx} className="leading-relaxed">
+        {renderInlineFormatting(trimmed)}
+      </p>
+    );
+  });
+};
 
 export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({ 
   isOpen, 
@@ -55,37 +115,59 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
   const [customReadTime, setCustomReadTime] = useState('');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const formScrollRef = useRef<HTMLFormElement>(null);
+
+  // Reset form only when modal opens fresh
+  useEffect(() => {
+    if (isOpen) {
+      setErrorMessage(null);
+      setActiveTab('write');
+    }
+  }, [isOpen]);
+
+  const resetForm = () => {
+    setTitle('');
+    setCategory(CATEGORIES[0]);
+    setIsCustomCategory(false);
+    setCustomCategoryInput('');
+    setImageUrl('');
+    setBody('');
+    setCustomReadTime('');
+    setErrorMessage(null);
+    setActiveTab('write');
+  };
 
   if (!isOpen) return null;
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setErrorMessage('Please select a valid image file (PNG, JPG, WEBP).');
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('Image size is too large (maximum 5MB).');
-      return;
-    }
+    setIsUploadingImage(true);
+    setErrorMessage(null);
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (result) {
-        setImageUrl(result);
-        setErrorMessage(null);
+    try {
+      // Auto-scale & compress client-side via canvas
+      const compressedUrl = await compressImageFile(file, 1200, 0.82);
+      if (compressedUrl) {
+        setImageUrl(compressedUrl);
+      } else {
+        setErrorMessage('Failed to process image file. Please try a different photo.');
       }
-    };
-    reader.onerror = () => {
+    } catch (err) {
+      console.error('Image compression error:', err);
       setErrorMessage('Failed to read image file.');
-    };
-    reader.readAsDataURL(file);
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -113,7 +195,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const selectedText = body.substring(start, end);
-    const replacement = `${prefix}${selectedText || 'text'}${suffix}`;
+    const replacement = `${prefix}${selectedText || 'bold text'}${suffix}`;
 
     const newBody = body.substring(0, start) + replacement + body.substring(end);
     setBody(newBody);
@@ -124,8 +206,8 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
     }, 10);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setErrorMessage(null);
 
     if (!currentUser) {
@@ -135,45 +217,50 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
 
     if (!title.trim()) {
       setErrorMessage('Please enter a title for your blog post.');
+      setActiveTab('write');
+      if (formScrollRef.current) formScrollRef.current.scrollTop = 0;
       return;
     }
 
     const finalCategory = (isCustomCategory ? customCategoryInput.trim() : category.trim()) || 'General';
     if (isCustomCategory && !customCategoryInput.trim()) {
       setErrorMessage('Please enter your custom category name.');
+      setActiveTab('write');
+      if (formScrollRef.current) formScrollRef.current.scrollTop = 0;
       return;
     }
 
-    if (!imageUrl) {
-      setErrorMessage('Please upload a cover picture for your blog.');
+    if (!body.trim() || body.trim().length < 15) {
+      setErrorMessage('Please write the body of the blog (at least 15 characters).');
+      setActiveTab('write');
+      if (formScrollRef.current) formScrollRef.current.scrollTop = 0;
       return;
     }
 
-    if (!body.trim() || body.trim().length < 20) {
-      setErrorMessage('Please write the body of the blog (at least 20 characters).');
-      return;
-    }
+    // Default image fallback if user didn't select one
+    const finalImageUrl = imageUrl || PRESET_COVER_IMAGES[0].url;
 
     setIsSubmitting(true);
 
     try {
-      const authorFullName = `${currentUser.name} ${currentUser.surname}`.trim();
+      const authorFullName = `${currentUser.name || 'Author'} ${currentUser.surname || ''}`.trim();
       const finalReadTime = customReadTime.trim() || calculateReadTime(body);
 
       const created = saveNewBlog({
         title,
         body,
-        imageUrl,
+        imageUrl: finalImageUrl,
         author: authorFullName,
+        authorSurname: currentUser.surname || '',
+        authorAvatar: currentUser.avatarUrl || '',
+        authorEmail: currentUser.email || '',
+        authorBio: currentUser.bio || '',
         category: finalCategory,
         readTime: finalReadTime,
       });
 
-      // Attach author avatar and email
-      created.authorAvatar = currentUser.avatarUrl;
-      created.authorEmail = currentUser.email;
-
       setIsSubmitting(false);
+      resetForm();
       onPublished(created);
       onClose();
     } catch (err) {
@@ -194,7 +281,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 bg-zinc-50/70">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 bg-zinc-50/70 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-zinc-200/80 flex items-center justify-center text-zinc-800">
               <Edit3 className="w-4 h-4" />
@@ -215,7 +302,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('write')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   activeTab === 'write' 
                     ? 'bg-white text-zinc-900 shadow-sm' 
                     : 'text-zinc-600 hover:text-zinc-900'
@@ -227,7 +314,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('preview')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   activeTab === 'preview' 
                     ? 'bg-white text-zinc-900 shadow-sm' 
                     : 'text-zinc-600 hover:text-zinc-900'
@@ -239,8 +326,11 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
             </div>
 
             <button
-              onClick={onClose}
-              className="p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-full transition-colors"
+              onClick={() => {
+                resetForm();
+                onClose();
+              }}
+              className="p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-full transition-colors cursor-pointer"
               aria-label="Close modal"
             >
               <X className="w-5 h-5" />
@@ -248,367 +338,412 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
           </div>
         </div>
 
-        {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
-          {errorMessage && (
-            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
-
-          {/* Author Status Card */}
-          {currentUser ? (
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200">
-              <div className="flex items-center gap-3">
-                <img 
-                  src={currentUser.avatarUrl} 
-                  alt={currentUser.name} 
-                  className="w-10 h-10 rounded-full object-cover border border-zinc-300 shadow-sm"
-                />
-                <div>
-                  <div className="text-xs font-bold text-zinc-900">
-                    Publishing as {currentUser.name} {currentUser.surname}
-                  </div>
-                  <div className="text-[11px] text-zinc-500">
-                    {currentUser.email}
-                  </div>
-                </div>
+        {/* Outer Form Container wrapping BOTH Write and Preview */}
+        <form 
+          ref={formScrollRef}
+          id="write-blog-form" 
+          onSubmit={handleSubmit} 
+          className="flex-1 overflow-y-auto flex flex-col scroll-smooth"
+        >
+          {/* Modal Body */}
+          <div className="flex-1 p-6 sm:p-8 space-y-6">
+            {errorMessage && (
+              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm flex items-center gap-2.5 shadow-sm">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                <span>{errorMessage}</span>
               </div>
-              <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                Verified Author
-              </span>
-            </div>
-          ) : (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-amber-50/70 border border-amber-200 gap-3">
-              <div className="flex items-center gap-2.5 text-xs text-amber-900">
-                <Lock className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>You need an account to publish. Create your profile with photo in seconds.</span>
-              </div>
-              <button
-                type="button"
-                onClick={onRequireAuth}
-                className="px-4 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-colors shrink-0"
-              >
-                Sign In / Sign Up
-              </button>
-            </div>
-          )}
+            )}
 
-          {activeTab === 'write' ? (
-            <form id="write-blog-form" onSubmit={handleSubmit} className="space-y-6">
-              
-              {/* Title Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
-                  Blog Title *
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. How I Built My First Offline-First App"
-                  className="w-full px-4 py-3 text-base sm:text-lg font-serif bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all"
-                  required
-                />
-              </div>
-
-              {/* Category & Read Time Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
-                      Category *
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsCustomCategory(!isCustomCategory);
-                        if (!isCustomCategory && !customCategoryInput) {
-                          setCustomCategoryInput('');
-                        }
-                      }}
-                      className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
-                    >
-                      {isCustomCategory ? '← Pick from list' : '+ Add custom category'}
-                    </button>
-                  </div>
-
-                  {isCustomCategory ? (
-                    <div className="space-y-1">
-                      <input
-                        type="text"
-                        value={customCategoryInput}
-                        onChange={(e) => setCustomCategoryInput(e.target.value)}
-                        placeholder="e.g. Artificial Intelligence, Neuroscience, Web3..."
-                        className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-emerald-500 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white transition-all"
-                        required
-                        autoFocus
-                      />
-                      <p className="text-[10px] text-emerald-700 font-medium">
-                        ✓ Registered across platform &amp; automatically added to Super SEO metadata
-                      </p>
+            {/* Author Status Card */}
+            {currentUser ? (
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={currentUser.avatarUrl} 
+                    alt={currentUser.name} 
+                    className="w-10 h-10 rounded-full object-cover border border-zinc-300 shadow-sm"
+                  />
+                  <div>
+                    <div className="text-xs font-bold text-zinc-900">
+                      Publishing as {currentUser.name} {currentUser.surname}
                     </div>
-                  ) : (
-                    <select
-                      value={category}
-                      onChange={(e) => {
-                        if (e.target.value === '__custom__') {
-                          setIsCustomCategory(true);
-                        } else {
-                          setCategory(e.target.value);
-                        }
-                      }}
-                      className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-zinc-900 focus:bg-white cursor-pointer"
-                    >
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                      <option value="__custom__">+ Type custom category...</option>
-                    </select>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-zinc-600" />
-                      <span>Read Time</span>
-                    </label>
-                    <span className="text-[10px] text-zinc-400">e.g. 1 min read</span>
+                    {currentUser.bio && (
+                      <p className="text-[11px] text-zinc-500 line-clamp-1">
+                        {currentUser.bio}
+                      </p>
+                    )}
                   </div>
+                </div>
+                <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
+                  Verified Author
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-amber-50/70 border border-amber-200 gap-3">
+                <div className="flex items-center gap-2.5 text-xs text-amber-900">
+                  <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>You need an account to publish. Create your profile with photo in seconds.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={onRequireAuth}
+                  className="px-4 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-xl transition-colors shrink-0 cursor-pointer shadow-xs"
+                >
+                  Sign In / Sign Up
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'write' ? (
+              <div className="space-y-6">
+                
+                {/* Title Input */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                    Blog Title *
+                  </label>
                   <input
                     type="text"
-                    value={customReadTime}
-                    onChange={(e) => setCustomReadTime(e.target.value)}
-                    placeholder={calculateReadTime(body) || '1 min read'}
-                    className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all font-mono"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. How I Built My First Offline-First App"
+                    className="w-full px-4 py-3 text-base sm:text-lg font-serif bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all"
+                    required
                   />
-                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                    {['1 min read', '2 min read', '3 min read', '5 min read'].map((timePreset) => (
+                </div>
+
+                {/* Category & Read Time Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                        Category *
+                      </label>
                       <button
-                        key={timePreset}
                         type="button"
-                        onClick={() => setCustomReadTime(timePreset)}
-                        className={`text-[10px] px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
-                          customReadTime === timePreset
-                            ? 'bg-zinc-900 text-white border-zinc-900'
-                            : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border-zinc-200'
-                        }`}
+                        onClick={() => {
+                          setIsCustomCategory(!isCustomCategory);
+                          if (!isCustomCategory && !customCategoryInput) {
+                            setCustomCategoryInput('');
+                          }
+                        }}
+                        className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
                       >
-                        {timePreset}
+                        {isCustomCategory ? '← Pick from list' : '+ Add custom category'}
                       </button>
-                    ))}
+                    </div>
+
+                    {isCustomCategory ? (
+                      <div className="space-y-1">
+                        <input
+                          type="text"
+                          value={customCategoryInput}
+                          onChange={(e) => setCustomCategoryInput(e.target.value)}
+                          placeholder="e.g. Artificial Intelligence, Neuroscience, Web3..."
+                          className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-emerald-500 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white transition-all"
+                          required
+                          autoFocus
+                        />
+                        <p className="text-[10px] text-emerald-700 font-medium">
+                          ✓ Registered across platform &amp; automatically added to Super SEO metadata
+                        </p>
+                      </div>
+                    ) : (
+                      <select
+                        value={category}
+                        onChange={(e) => {
+                          if (e.target.value === '__custom__') {
+                            setIsCustomCategory(true);
+                          } else {
+                            setCategory(e.target.value);
+                          }
+                        }}
+                        className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-zinc-900 focus:bg-white cursor-pointer"
+                      >
+                        {CATEGORIES.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                        <option value="__custom__">+ Type custom category...</option>
+                      </select>
+                    )}
                   </div>
-                </div>
-              </div>
 
-              {/* Picture Upload (Presets and URL completely removed) */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
-                    <ImageIcon className="w-4 h-4 text-zinc-600" />
-                    <span>Picture *</span>
-                  </label>
-                  {imageUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setImageUrl('')}
-                      className="text-[11px] text-red-500 hover:underline"
-                    >
-                      Remove picture
-                    </button>
-                  )}
-                </div>
-
-                {imageUrl ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-zinc-200 aspect-[21/9]">
-                    <img 
-                      src={imageUrl} 
-                      alt="Cover Preview" 
-                      className="w-full h-full object-cover"
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-zinc-600" />
+                        <span>Read Time</span>
+                      </label>
+                      <span className="text-[10px] text-zinc-400">e.g. 1 min read</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={customReadTime}
+                      onChange={(e) => setCustomReadTime(e.target.value)}
+                      placeholder={calculateReadTime(body) || '1 min read'}
+                      className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all font-mono"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-end p-3">
-                      <span className="text-[11px] font-medium text-white bg-black/60 px-2 py-0.5 rounded backdrop-blur-sm">
-                        Selected Picture
-                      </span>
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                      {['1 min read', '2 min read', '3 min read', '5 min read'].map((timePreset) => (
+                        <button
+                          key={timePreset}
+                          type="button"
+                          onClick={() => setCustomReadTime(timePreset)}
+                          className={`text-[10px] px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                            customReadTime === timePreset
+                              ? 'bg-zinc-900 text-white border-zinc-900'
+                              : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border-zinc-200'
+                          }`}
+                        >
+                          {timePreset}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                ) : (
-                  <div
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
-                      isDragging 
-                        ? 'border-zinc-900 bg-zinc-100' 
-                        : 'border-zinc-300 hover:border-zinc-600 bg-zinc-50'
-                    }`}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          handleFileUpload(e.target.files[0]);
-                        }
-                      }}
-                    />
-                    <Upload className="w-8 h-8 text-zinc-500 mx-auto mb-2" />
-                    <p className="text-xs sm:text-sm font-semibold text-zinc-800">
-                      Click to choose a picture or drag &amp; drop
-                    </p>
-                    <p className="text-[11px] text-zinc-500 mt-1">
-                      PNG, JPG, or WEBP up to 5MB
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Body Textarea with Markdown Toolbar */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
-                    Body of the Blog *
-                  </label>
-                  <div className="flex items-center gap-3 text-[11px] font-mono text-zinc-500">
-                    <span>{wordCount} words</span>
-                    <span>·</span>
-                    <span className="flex items-center gap-1 text-zinc-700">
-                      <Clock className="w-3 h-3" />
-                      {estimatedRead}
-                    </span>
-                  </div>
                 </div>
 
-                {/* Formatting Toolbar */}
-                <div className="flex items-center gap-1 p-1 bg-zinc-100 border border-zinc-200 rounded-t-xl text-zinc-600">
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting('**', '**')}
-                    className="p-1.5 rounded hover:bg-white hover:text-zinc-900 transition-colors"
-                    title="Bold (**text**)"
-                  >
-                    <Bold className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting('*', '*')}
-                    className="p-1.5 rounded hover:bg-white hover:text-zinc-900 transition-colors"
-                    title="Italic (*text*)"
-                  >
-                    <Italic className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting('### ', '')}
-                    className="p-1.5 rounded hover:bg-white hover:text-zinc-900 transition-colors"
-                    title="Subheading (### Heading)"
-                  >
-                    <Heading2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting('> ', '')}
-                    className="p-1.5 rounded hover:bg-white hover:text-zinc-900 transition-colors"
-                    title="Quote (> Quote)"
-                  >
-                    <Quote className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => insertFormatting('- ', '')}
-                    className="p-1.5 rounded hover:bg-white hover:text-zinc-900 transition-colors"
-                    title="Bullet List (- Item)"
-                  >
-                    <List className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <textarea
-                  ref={textareaRef}
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  rows={10}
-                  placeholder="Write the body of your blog here..."
-                  className="w-full px-4 py-3.5 text-sm sm:text-base bg-zinc-50 border border-t-0 border-zinc-200 rounded-b-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white leading-relaxed font-sans resize-y"
-                  required
-                />
-              </div>
-
-            </form>
-          ) : (
-            /* Live Preview Tab */
-            <div className="space-y-6">
-              <div className="rounded-2xl overflow-hidden border border-zinc-200 bg-white shadow-sm">
-                {imageUrl && (
-                  <div className="relative aspect-[21/9] w-full overflow-hidden bg-zinc-100">
-                    <img
-                      src={imageUrl}
-                      alt={title || 'Blog Preview'}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-
-                <div className="p-6 sm:p-8 space-y-6">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700">
-                      {activeCategory}
-                    </span>
-                    <span className="text-xs text-zinc-500 font-mono">
-                      · {estimatedRead}
-                    </span>
+                {/* Picture Upload & Preset Options */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-zinc-600" />
+                      <span>Blog Cover Picture</span>
+                    </label>
+                    {imageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl('')}
+                        className="text-[11px] text-red-500 hover:underline cursor-pointer"
+                      >
+                        Remove picture
+                      </button>
+                    )}
                   </div>
 
-                  <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-zinc-900 leading-tight">
-                    {title || 'Untitled Blog Post'}
-                  </h1>
-
-                  {currentUser && (
-                    <div className="flex items-center gap-3 pt-4 border-t border-zinc-100">
+                  {imageUrl ? (
+                    <div className="relative rounded-2xl overflow-hidden border border-zinc-200 aspect-[21/9]">
                       <img 
-                        src={currentUser.avatarUrl} 
-                        alt={currentUser.name} 
-                        className="w-10 h-10 rounded-full object-cover border border-zinc-200 shadow-sm"
+                        src={imageUrl} 
+                        alt="Cover Preview" 
+                        className="w-full h-full object-cover"
                       />
-                      <div>
-                        <div className="text-sm font-semibold text-zinc-900">
-                          {currentUser.name} {currentUser.surname}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent flex items-end p-3">
+                        <span className="text-[11px] font-medium text-white bg-black/60 px-2.5 py-1 rounded-lg backdrop-blur-sm">
+                          Selected Picture
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                          isDragging 
+                            ? 'border-zinc-900 bg-zinc-100' 
+                            : 'border-zinc-300 hover:border-zinc-600 bg-zinc-50'
+                        }`}
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleFileUpload(e.target.files[0]);
+                            }
+                          }}
+                        />
+                        <Upload className="w-7 h-7 text-zinc-500 mx-auto mb-1.5" />
+                        <p className="text-xs sm:text-sm font-semibold text-zinc-800">
+                          {isUploadingImage ? 'Compressing photo...' : 'Click to upload photo or drag & drop'}
+                        </p>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">
+                          Uploads are automatically compressed for high performance
+                        </p>
+                      </div>
+
+                      {/* Quick Cover Presets */}
+                      <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/80 space-y-2">
+                        <div className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wider flex items-center gap-1.5">
+                          <Sparkles className="w-3 h-3 text-zinc-500" />
+                          <span>Or pick a ready-to-use cover</span>
                         </div>
-                        <div className="text-xs text-zinc-500">
-                          Author Profile
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          {PRESET_COVER_IMAGES.map((preset) => (
+                            <button
+                              key={preset.label}
+                              type="button"
+                              onClick={() => setImageUrl(preset.url)}
+                              className="group relative rounded-xl overflow-hidden aspect-[16/10] border border-zinc-200 hover:border-zinc-900 transition-all cursor-pointer text-left"
+                            >
+                              <img 
+                                src={preset.url} 
+                                alt={preset.label} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              />
+                              <div className="absolute inset-0 bg-black/40 flex items-end p-1.5">
+                                <span className="text-[10px] font-medium text-white line-clamp-1">
+                                  {preset.label}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>
                   )}
+                </div>
 
-                  <div className="pt-4 space-y-4 text-zinc-700 text-sm sm:text-base leading-relaxed border-t border-zinc-100">
-                    {body ? (
-                      body.split('\n\n').map((paragraph, idx) => (
-                        <p key={idx}>{paragraph}</p>
-                      ))
-                    ) : (
-                      <p className="text-zinc-400 italic">No body text yet.</p>
+                {/* Body Textarea with Markdown Toolbar */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                      Body of the Blog *
+                    </label>
+                    <div className="flex items-center gap-3 text-[11px] font-mono text-zinc-500">
+                      <span>{wordCount} words</span>
+                      <span>·</span>
+                      <span className="flex items-center gap-1 text-zinc-700">
+                        <Clock className="w-3 h-3" />
+                        {estimatedRead}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Formatting Toolbar */}
+                  <div className="flex items-center gap-1 p-1.5 bg-zinc-100 border border-zinc-200 rounded-t-xl text-zinc-700">
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting('**', '**')}
+                      className="p-1.5 rounded bg-white hover:bg-zinc-200 text-zinc-900 font-bold flex items-center gap-1 text-xs border border-zinc-200 transition-colors cursor-pointer"
+                      title="Bold text (**text**)"
+                    >
+                      <Bold className="w-3.5 h-3.5" />
+                      <span>Bold</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting('*', '*')}
+                      className="p-1.5 rounded hover:bg-white text-zinc-700 hover:text-zinc-900 transition-colors cursor-pointer"
+                      title="Italic (*text*)"
+                    >
+                      <Italic className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting('### ', '')}
+                      className="p-1.5 rounded hover:bg-white text-zinc-700 hover:text-zinc-900 transition-colors cursor-pointer"
+                      title="Subheading (### Heading)"
+                    >
+                      <Heading2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting('> ', '')}
+                      className="p-1.5 rounded hover:bg-white text-zinc-700 hover:text-zinc-900 transition-colors cursor-pointer"
+                      title="Quote (> Quote)"
+                    >
+                      <Quote className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormatting('- ', '')}
+                      className="p-1.5 rounded hover:bg-white text-zinc-700 hover:text-zinc-900 transition-colors cursor-pointer"
+                      title="Bullet List (- Item)"
+                    >
+                      <List className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <textarea
+                    ref={textareaRef}
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    rows={10}
+                    placeholder="Write the body of your blog here... Highlight text and click 'Bold' to make text bold."
+                    className="w-full px-4 py-3.5 text-sm sm:text-base bg-zinc-50 border border-t-0 border-zinc-200 rounded-b-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white leading-relaxed font-sans resize-y"
+                    required
+                  />
+                </div>
+
+              </div>
+            ) : (
+              /* Live Preview Tab */
+              <div className="space-y-6">
+                <div className="rounded-2xl overflow-hidden border border-zinc-200 bg-white shadow-sm">
+                  {(imageUrl || PRESET_COVER_IMAGES[0].url) && (
+                    <div className="relative aspect-[21/9] w-full overflow-hidden bg-zinc-100">
+                      <img
+                        src={imageUrl || PRESET_COVER_IMAGES[0].url}
+                        alt={title || 'Blog Preview'}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+
+                  <div className="p-6 sm:p-8 space-y-6">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700">
+                        {activeCategory}
+                      </span>
+                      <span className="text-xs text-zinc-500 font-mono">
+                        · {estimatedRead}
+                      </span>
+                    </div>
+
+                    <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-zinc-900 leading-tight">
+                      {title || 'Untitled Blog Post'}
+                    </h1>
+
+                    {currentUser && (
+                      <div className="flex items-center gap-3 pt-4 border-t border-zinc-100">
+                        <img 
+                          src={currentUser.avatarUrl} 
+                          alt={currentUser.name} 
+                          className="w-10 h-10 rounded-full object-cover border border-zinc-200 shadow-sm"
+                        />
+                        <div>
+                          <div className="text-sm font-semibold text-zinc-900">
+                            {currentUser.name} {currentUser.surname}
+                          </div>
+                          {currentUser.bio && (
+                            <div className="text-xs text-zinc-500">
+                              {currentUser.bio}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
+
+                    <div className="pt-4 space-y-4 text-zinc-800 text-base leading-relaxed border-t border-zinc-100 font-sans">
+                      {body ? (
+                        renderFormattedBody(body)
+                      ) : (
+                        <p className="text-zinc-400 italic">No body text written yet.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </form>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-100 bg-zinc-50/70">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-100 bg-zinc-50/70 shrink-0">
           <button
             type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 transition-colors"
+            onClick={() => {
+              resetForm();
+              onClose();
+            }}
+            className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -618,7 +753,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('preview')}
-                className="px-4 py-2 text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-100 rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-100 rounded-xl transition-colors cursor-pointer"
               >
                 Preview
               </button>
@@ -626,16 +761,16 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('write')}
-                className="px-4 py-2 text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-100 rounded-xl transition-colors"
+                className="px-4 py-2 text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-100 rounded-xl transition-colors cursor-pointer"
               >
                 Back to Edit
               </button>
             )}
 
             <button
-              type="submit"
-              form="write-blog-form"
-              disabled={isSubmitting}
+              type="button"
+              onClick={() => handleSubmit()}
+              disabled={isSubmitting || isUploadingImage}
               className="px-5 py-2.5 bg-zinc-900 hover:bg-black text-white font-semibold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? 'Publishing...' : 'Publish Blog'}

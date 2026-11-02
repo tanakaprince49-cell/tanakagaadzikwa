@@ -8,11 +8,13 @@ import {
   Check, 
   ArrowLeft, 
   Trash2, 
-  User
+  User,
+  Sparkles
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
 import { toggleLikeBlog, hasUserLiked, deleteCommunityBlog } from '../data/blogsData';
 import { setSingleBlogSeo } from '../utils/seo';
+import { renderFormattedBody } from './WriteBlogModal';
 
 interface BlogReaderModalProps {
   post: BlogPost | null;
@@ -57,45 +59,45 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
   };
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this blog post?')) {
+    if (window.confirm('Are you sure you want to delete your blog post?')) {
       deleteCommunityBlog(post.id);
       if (onPostDeleted) onPostDeleted(post.id);
       onClose();
     }
   };
 
+  const currentFullName = currentUser ? `${currentUser.name} ${currentUser.surname}`.trim() : '';
   const canDelete = post.isCommunityPost && (
-    !post.authorEmail || 
-    (currentUser && currentUser.email === post.authorEmail)
+    (currentUser && currentUser.email === post.authorEmail) ||
+    (currentUser && currentFullName.toLowerCase() === post.author.toLowerCase()) ||
+    !post.authorEmail
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 md:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150">
-      <div 
-        className="relative w-full max-w-3xl min-h-screen sm:min-h-0 sm:max-h-[92vh] flex flex-col bg-white text-zinc-900 border-0 sm:border border-zinc-200 sm:rounded-3xl shadow-2xl overflow-hidden my-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Sticky Action Bar */}
-        <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-4 bg-white/95 backdrop-blur-md border-b border-zinc-100">
+    <div className="fixed inset-0 z-50 w-screen h-screen bg-white text-zinc-900 overflow-y-auto flex flex-col animate-in fade-in duration-150">
+      
+      {/* Sticky Full-Width Top Action Bar */}
+      <header className="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-md border-b border-zinc-200 px-6 lg:px-12 py-3.5 shadow-xs">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
           <button
             onClick={onClose}
-            className="flex items-center gap-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer group"
+            className="flex items-center gap-2 font-serif text-xs tracking-[0.15em] uppercase text-zinc-700 hover:text-black transition-colors cursor-pointer group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Back to Blogs</span>
+            <span>Back to All Blogs</span>
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             {/* Share button */}
             <button
               onClick={handleShare}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-xs font-semibold text-zinc-700 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-xs font-semibold text-zinc-800 transition-all cursor-pointer"
               title="Share story link"
             >
               {copied ? (
                 <>
                   <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="text-emerald-600">Copied Link!</span>
+                  <span className="text-emerald-600 font-bold">Link Copied!</span>
                 </>
               ) : (
                 <>
@@ -108,10 +110,10 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
             {/* Like button */}
             <button
               onClick={handleLike}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 isLiked 
                   ? 'bg-red-50 text-red-600 border border-red-200' 
-                  : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700'
+                  : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-800'
               }`}
               title="Like this blog"
             >
@@ -123,175 +125,148 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
             {canDelete && (
               <button
                 onClick={handleDelete}
-                className="p-2 text-zinc-400 hover:text-red-500 rounded-xl hover:bg-red-50 transition-colors cursor-pointer"
-                title="Delete this blog"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors cursor-pointer"
+                title="Delete this blog post"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete</span>
               </button>
             )}
 
             <button
               onClick={onClose}
-              className="p-1.5 text-zinc-400 hover:text-zinc-700 rounded-full hover:bg-zinc-100 transition-colors cursor-pointer ml-1"
-              aria-label="Close"
+              className="p-2 text-zinc-400 hover:text-zinc-900 rounded-full hover:bg-zinc-100 transition-colors cursor-pointer ml-1"
+              aria-label="Close Fullscreen View"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
           </div>
         </div>
+      </header>
 
-        {/* Story Content */}
-        <div className="flex-1 overflow-y-auto pb-16">
-          
-          {/* Hero Cover Picture */}
-          {post.imageUrl && (
-            <div className="relative w-full aspect-[21/10] sm:aspect-[24/10] overflow-hidden bg-zinc-100">
+      {/* Full-Screen Content Area */}
+      <main className="flex-1 w-full max-w-4xl mx-auto px-6 sm:px-8 py-8 sm:py-12 space-y-8">
+        
+        {/* Cover Photo - Full Bleed Banner */}
+        {post.imageUrl && (
+          <div className="w-full aspect-[21/9] rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200 shadow-sm">
+            <img 
+              src={post.imageUrl} 
+              alt={`${post.title} - Cover Photo by ${post.author}`}
+              itemProp="image"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        {/* Header Metadata */}
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
+              {post.category || 'General'}
+            </span>
+            <span>·</span>
+            <span className="flex items-center gap-1.5 font-mono">
+              <Calendar className="w-3.5 h-3.5 text-zinc-400" />
+              {post.publishedDate}
+            </span>
+            <span>·</span>
+            <span className="flex items-center gap-1.5 font-mono">
+              <Clock className="w-3.5 h-3.5 text-zinc-400" />
+              {post.readTime}
+            </span>
+          </div>
+
+          <h1 className="font-serif text-3xl sm:text-5xl font-semibold text-zinc-900 leading-tight tracking-tight">
+            {post.title}
+          </h1>
+        </div>
+
+        {/* Author Card Component with Custom Profile Pic & Bio */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 rounded-3xl bg-zinc-50 border border-zinc-200 gap-4">
+          <div 
+            className={`flex items-start sm:items-center gap-4 ${onSelectAuthor ? 'cursor-pointer group/author' : ''}`}
+            onClick={() => {
+              if (onSelectAuthor) {
+                onSelectAuthor(post.author);
+              }
+            }}
+          >
+            {post.authorAvatar ? (
               <img 
-                src={post.imageUrl} 
-                alt={`${post.title} - Cover Photo by ${post.author}`}
-                itemProp="image"
-                className="w-full h-full object-cover"
+                src={post.authorAvatar} 
+                alt={post.author} 
+                className="w-14 h-14 rounded-full object-cover border-2 border-zinc-300 shadow-sm group-hover/author:border-zinc-900 transition-colors shrink-0"
               />
-            </div>
-          )}
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xl shadow-sm shrink-0">
+                {post.author[0]?.toUpperCase() || 'A'}
+              </div>
+            )}
 
-          <div className="max-w-2xl mx-auto px-6 sm:px-8 pt-8 space-y-6">
-            
-            {/* Meta row */}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 border-b border-zinc-100 pb-4">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700">
-                {post.category}
-              </span>
-              <span>·</span>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-zinc-400" />
-                {post.publishedDate}
-              </span>
-              <span>·</span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-zinc-400" />
-                {post.readTime}
-              </span>
-            </div>
-
-            {/* Title */}
-            <h1 className="font-serif text-2xl sm:text-4xl font-normal text-zinc-900 leading-tight">
-              {post.title}
-            </h1>
-
-            {/* Author Profile Card */}
-            <div className="flex items-center justify-between p-4 rounded-2xl bg-zinc-50 border border-zinc-200">
-              <div 
-                className={`flex items-center gap-3 ${onSelectAuthor ? 'cursor-pointer group/author' : ''}`}
-                onClick={() => {
-                  if (onSelectAuthor) {
-                    onSelectAuthor(post.author);
-                  }
-                }}
-              >
-                {post.authorAvatar ? (
-                  <img 
-                    src={post.authorAvatar} 
-                    alt={post.author} 
-                    className="w-11 h-11 rounded-full object-cover border border-zinc-300 shadow-sm group-hover/author:border-zinc-900 transition-colors"
-                  />
-                ) : (
-                  <div className="w-11 h-11 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-sm">
-                    {post.author[0]?.toUpperCase() || 'U'}
-                  </div>
-                )}
-                <div>
-                  <div className="text-sm font-bold text-zinc-900 group-hover/author:text-black flex items-center gap-1.5">
-                    <span>{post.author}</span>
-                    {onSelectAuthor && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-zinc-200/70 text-zinc-700 font-medium">
-                        View all blogs
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-zinc-500">
-                    Recognized Author Profile
-                  </div>
-                </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-base font-bold text-zinc-900 group-hover/author:underline">
+                  {post.author}
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                  Verified Author
+                </span>
               </div>
 
+              {post.authorBio ? (
+                <p className="text-xs text-zinc-600 leading-relaxed max-w-lg">
+                  {post.authorBio}
+                </p>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  Published author on TanakaGaadzikwa.com · Indexed Super SEO Profile
+                </p>
+              )}
+            </div>
+          </div>
+
+          {onSelectAuthor && (
+            <button
+              type="button"
+              onClick={() => onSelectAuthor(post.author)}
+              className="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-200/80 hover:bg-zinc-300 text-zinc-800 transition-colors self-start sm:self-center shrink-0 cursor-pointer"
+            >
+              View Author's Blogs →
+            </button>
+          )}
+        </div>
+
+        {/* Article Body with Full Formatting & Bold Letters */}
+        <article className="pt-2 space-y-6 text-zinc-900 text-base sm:text-xl leading-relaxed font-sans">
+          {renderFormattedBody(post.body)}
+        </article>
+
+        {/* Bottom Call to Action */}
+        <div className="pt-8 border-t border-zinc-200">
+          <div className="p-8 rounded-3xl bg-zinc-900 text-white text-center space-y-4 shadow-lg">
+            <h3 className="font-serif text-xl sm:text-2xl font-semibold">
+              Have something to share?
+            </h3>
+            <p className="text-xs sm:text-sm text-zinc-300 max-w-md mx-auto leading-relaxed">
+              Create an account with your photo, name, and bio to publish your blogs and get indexed on Google Super SEO.
+            </p>
+            <div className="pt-2">
               <button
-                onClick={onOpenWriteBlog}
-                className="text-xs font-semibold text-zinc-700 hover:text-zinc-900 hover:underline"
+                onClick={() => {
+                  onClose();
+                  onOpenWriteBlog();
+                }}
+                className="px-6 py-3 bg-white text-zinc-900 hover:bg-zinc-100 font-semibold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer"
               >
-                Write a Blog
+                + Write a Blog
               </button>
             </div>
-
-            {/* Story Body Content */}
-            <article className="pt-4 space-y-5 text-zinc-800 text-base sm:text-lg leading-relaxed font-sans">
-              {post.body.split('\n\n').map((paragraph, idx) => {
-                const trimmed = paragraph.trim();
-                if (!trimmed) return null;
-
-                if (trimmed.startsWith('### ')) {
-                  return (
-                    <h3 key={idx} className="font-serif text-xl sm:text-2xl text-zinc-900 pt-3 pb-1 font-semibold">
-                      {trimmed.replace('### ', '')}
-                    </h3>
-                  );
-                }
-
-                if (trimmed.startsWith('> ')) {
-                  return (
-                    <blockquote 
-                      key={idx} 
-                      className="border-l-4 border-zinc-900 pl-4 py-1 italic text-zinc-700 bg-zinc-50 rounded-r-xl"
-                    >
-                      {trimmed.replace(/^>\s*/, '').replace(/^"|"$/g, '')}
-                    </blockquote>
-                  );
-                }
-
-                if (trimmed.startsWith('- ')) {
-                  const items = trimmed.split('\n- ');
-                  return (
-                    <ul key={idx} className="space-y-1.5 pl-6 list-disc text-zinc-800 my-3">
-                      {items.map((item, i) => (
-                        <li key={i}>{item.replace(/^- /, '')}</li>
-                      ))}
-                    </ul>
-                  );
-                }
-
-                return (
-                  <p key={idx} className="leading-relaxed">
-                    {trimmed}
-                  </p>
-                );
-              })}
-            </article>
-
-            {/* Bottom Write CTA */}
-            <div className="mt-12 p-6 rounded-2xl bg-zinc-50 border border-zinc-200 text-center space-y-3">
-              <h3 className="font-serif text-lg font-semibold text-zinc-900">
-                Want to write your own blog?
-              </h3>
-              <p className="text-xs text-zinc-600 max-w-sm mx-auto">
-                Create an account or sign in to publish with your title, picture, and thoughts.
-              </p>
-              <div>
-                <button
-                  onClick={() => {
-                    onClose();
-                    onOpenWriteBlog();
-                  }}
-                  className="px-5 py-2.5 bg-zinc-900 hover:bg-black text-white text-xs font-semibold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-                >
-                  Write a Blog
-                </button>
-              </div>
-            </div>
-
           </div>
         </div>
 
-      </div>
+      </main>
+
     </div>
   );
 };

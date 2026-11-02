@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, Upload, User, Mail, Lock, AlertCircle, Camera, Check } from 'lucide-react';
 import { UserProfile } from '../types';
 import { signUp, signIn } from '../data/authData';
+import { compressImageFile } from '../utils/imageCompressor';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -24,7 +25,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  
+  const [bio, setBio] = useState('');
+
   // Sign in fields
   const [signInEmail, setSignInEmail] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
@@ -35,29 +37,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleAvatarUpload = (file: File) => {
+  const handleAvatarUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setErrorMessage('Please select a valid image file (JPG, PNG, WEBP).');
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('Image size is too large (max 5MB).');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (result) {
-        setAvatarUrl(result);
+    try {
+      const compressedAvatar = await compressImageFile(file, 400, 0.82);
+      if (compressedAvatar) {
+        setAvatarUrl(compressedAvatar);
         setErrorMessage(null);
+      } else {
+        setErrorMessage('Failed to process profile picture.');
       }
-    };
-    reader.onerror = () => {
+    } catch (err) {
+      console.error('Avatar processing error:', err);
       setErrorMessage('Failed to read image file.');
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   const handleSignUpSubmit = (e: React.FormEvent) => {
@@ -76,6 +73,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       email,
       password,
       avatarUrl,
+      bio,
     });
     setIsSubmitting(false);
 
@@ -267,6 +265,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                   />
                 </div>
+              </div>
+
+              {/* Bio / About You */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-600">
+                  Bio / About You (optional)
+                </label>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="e.g. Software developer based in Harare, interested in AI & building web apps."
+                  rows={2}
+                  className="w-full px-3.5 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all font-sans resize-none"
+                />
               </div>
 
               {/* Password */}
