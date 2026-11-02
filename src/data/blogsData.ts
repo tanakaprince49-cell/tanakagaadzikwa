@@ -59,6 +59,7 @@ export function saveNewBlog(input: {
   author?: string;
   authorRole?: string;
   category?: string;
+  readTime?: string;
   tags?: string[];
 }): BlogPost {
   const title = input.title.trim();
@@ -75,7 +76,7 @@ export function saveNewBlog(input: {
   const now = new Date();
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const publishedDate = `${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
-  const readTime = calculateReadTime(body);
+  const readTime = input.readTime?.trim() || calculateReadTime(body);
 
   const newPost: BlogPost = {
     id,

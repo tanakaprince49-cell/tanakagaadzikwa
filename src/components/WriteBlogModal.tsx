@@ -50,6 +50,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [imageUrl, setImageUrl] = useState('');
   const [body, setBody] = useState('');
+  const [customReadTime, setCustomReadTime] = useState('');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -149,6 +150,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
 
     try {
       const authorFullName = `${currentUser.name} ${currentUser.surname}`.trim();
+      const finalReadTime = customReadTime.trim() || calculateReadTime(body);
 
       const created = saveNewBlog({
         title,
@@ -156,6 +158,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
         imageUrl,
         author: authorFullName,
         category,
+        readTime: finalReadTime,
       });
 
       // Attach author avatar and email
@@ -173,7 +176,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
   };
 
   const wordCount = body.trim() ? body.trim().split(/\s+/).length : 0;
-  const estimatedRead = calculateReadTime(body);
+  const estimatedRead = customReadTime.trim() || calculateReadTime(body);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150">
@@ -301,22 +304,57 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                 />
               </div>
 
-              {/* Category */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
-                  Category *
-                </label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-zinc-900 focus:bg-white cursor-pointer"
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
+              {/* Category & Read Time Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
+                    Category *
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 focus:outline-none focus:border-zinc-900 focus:bg-white cursor-pointer"
+                  >
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-zinc-600" />
+                      <span>Read Time</span>
+                    </label>
+                    <span className="text-[10px] text-zinc-400">e.g. 1 min read</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={customReadTime}
+                    onChange={(e) => setCustomReadTime(e.target.value)}
+                    placeholder={calculateReadTime(body) || '1 min read'}
+                    className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all font-mono"
+                  />
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    {['1 min read', '2 min read', '3 min read', '5 min read'].map((timePreset) => (
+                      <button
+                        key={timePreset}
+                        type="button"
+                        onClick={() => setCustomReadTime(timePreset)}
+                        className={`text-[10px] px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                          customReadTime === timePreset
+                            ? 'bg-zinc-900 text-white border-zinc-900'
+                            : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border-zinc-200'
+                        }`}
+                      >
+                        {timePreset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Picture Upload (Presets and URL completely removed) */}
