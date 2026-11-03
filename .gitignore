@@ -7,3 +7,5 @@ coverage/
 .env*
 !.env.example
 .aistudio/
+*adminsdk*.json
+*service-account*.json
