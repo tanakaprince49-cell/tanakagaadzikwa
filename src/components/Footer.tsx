@@ -61,6 +61,12 @@ export const Footer: React.FC = () => {
             <a href="/blogs" className="hover:text-white transition-colors">
               Blogs
             </a>
+            <a href="/privacy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </a>
+            <a href="/terms" className="hover:text-white transition-colors">
+              Terms of Service
+            </a>
             <a href="https://linkupbuild.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
               LINKUP Platform
             </a>
@@ -74,14 +80,18 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom row: Address and Copyright */}
+        {/* Bottom row: Address, Legal, and Copyright */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-zinc-500">
           <p>
-            © {new Date().getFullYear()} TANAKA GAADZIKWA. All Rights Reserved.
+            © {new Date().getFullYear()} TANAKA GAADZIKWA (<a href="https://tanakagaadzikwa.com" className="hover:underline text-zinc-400">tanakagaadzikwa.com</a>). All Rights Reserved.
           </p>
-          <p className="text-[11px] text-zinc-600">
-            Open Builder Platform · Write, Share, and Connect
-          </p>
+          <div className="flex items-center gap-3 text-[11px] text-zinc-500">
+            <a href="/privacy" className="hover:text-zinc-300 transition-colors">Privacy</a>
+            <span>•</span>
+            <a href="/terms" className="hover:text-zinc-300 transition-colors">Terms</a>
+            <span>•</span>
+            <span>Open Builder Platform</span>
+          </div>
         </div>
 
       </div>

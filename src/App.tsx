@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/HomePage';
 import { BlogsPage } from './pages/BlogsPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
@@ -18,13 +20,20 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Intercept internal links like /blogs and /
+  // Intercept internal links like /blogs, /, /privacy, /terms
   useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest('a');
       if (!target) return;
       const href = target.getAttribute('href');
-      if (href && (href === '/' || href === '/blogs' || href.startsWith('/blogs/'))) {
+      if (
+        href &&
+        (href === '/' ||
+          href === '/blogs' ||
+          href.startsWith('/blogs/') ||
+          href === '/privacy' ||
+          href === '/terms')
+      ) {
         e.preventDefault();
         window.history.pushState({}, '', href);
         setCurrentPath(href.toLowerCase());
@@ -49,6 +58,8 @@ export default function App() {
   }, []);
 
   const isBlogsRoute = currentPath === '/blogs' || currentPath === '/blog' || currentPath.startsWith('/blogs/');
+  const isPrivacyRoute = currentPath === '/privacy';
+  const isTermsRoute = currentPath === '/terms';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0B1120] text-white font-sans selection:bg-[#38BDF8]/30 selection:text-white">
@@ -56,6 +67,16 @@ export default function App() {
       <main className="flex-1 w-full">
         {isBlogsRoute ? (
           <BlogsPage onNavigateHome={() => navigateTo('/')} />
+        ) : isPrivacyRoute ? (
+          <PrivacyPolicyPage
+            onNavigateHome={() => navigateTo('/')}
+            onNavigateBlogs={() => navigateTo('/blogs')}
+          />
+        ) : isTermsRoute ? (
+          <TermsOfServicePage
+            onNavigateHome={() => navigateTo('/')}
+            onNavigateBlogs={() => navigateTo('/blogs')}
+          />
         ) : (
           <HomePage onNavigateToBlogs={() => navigateTo('/blogs')} />
         )}
