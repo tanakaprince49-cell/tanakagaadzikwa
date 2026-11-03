@@ -401,14 +401,6 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
             <p className="text-xs text-zinc-500 leading-relaxed max-w-sm mx-auto">
               Sign in with Google to share insights, stories, or perspectives and get your own verified author profile indexed on Google &amp; Google News.
             </p>
-            <div className="pt-2">
-              <button
-                onClick={handleOpenWrite}
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-zinc-900 hover:bg-black text-white text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer shadow-sm active:scale-95"
-              >
-                Write the First Blog
-              </button>
-            </div>
           </div>
         ) : filteredBlogs.length === 0 ? (
           <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center space-y-3 max-w-md mx-auto shadow-sm">
