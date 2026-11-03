@@ -17,7 +17,8 @@ import {
   Link as LinkIcon,
   Crop,
   Code,
-  Strikethrough
+  Strikethrough,
+  ArrowLeft
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
 import { saveNewBlog, calculateReadTime, PRESET_COVER_IMAGES } from '../data/blogsData';
@@ -391,36 +392,54 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150">
         <div 
-          className="relative w-full max-w-3xl max-h-[92vh] flex flex-col bg-white text-zinc-900 rounded-3xl shadow-2xl border border-zinc-200 overflow-hidden my-auto"
+          className="relative w-full h-full sm:h-auto max-w-none sm:max-w-3xl min-h-screen sm:min-h-0 sm:max-h-[92vh] flex flex-col bg-white text-zinc-900 rounded-none sm:rounded-3xl shadow-2xl border-0 sm:border border-zinc-200 overflow-hidden my-0 sm:my-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Modal Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 bg-zinc-50/70 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-zinc-200/80 flex items-center justify-center text-zinc-800">
-                <Edit3 className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-base sm:text-lg font-serif font-semibold text-zinc-900">
-                  Write a Blog
-                </h2>
-                <p className="text-xs text-zinc-500">
-                  Publish a story on TanakaGaadzikwa.com
-                </p>
+          {/* Responsive Header Bar */}
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-zinc-100 bg-white sticky top-0 z-20 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Back Button for Mobile & Desktop */}
+              <button
+                type="button"
+                onClick={() => {
+                  resetForm();
+                  onClose();
+                }}
+                className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-700 hover:text-black transition-colors cursor-pointer py-1.5 px-2.5 rounded-xl hover:bg-zinc-100 shrink-0 border border-zinc-200/80 sm:border-transparent"
+                title="Back to blogs"
+              >
+                <ArrowLeft className="w-4 h-4 text-zinc-800" />
+                <span>Back</span>
+              </button>
+
+              <div className="h-4 w-px bg-zinc-200 hidden sm:block" />
+
+              <div className="hidden sm:flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center text-zinc-800">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-lg font-serif font-semibold text-zinc-900 leading-tight">
+                    Write a Blog
+                  </h2>
+                  <p className="text-[11px] text-zinc-500 hidden md:block">
+                    Publish a story on TanakaGaadzikwa.com
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {/* Tab Switcher */}
-              <div className="flex items-center bg-zinc-200/70 p-1 rounded-xl">
+              <div className="flex items-center bg-zinc-100 p-1 rounded-xl">
                 <button
                   type="button"
                   onClick={() => setActiveTab('write')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     activeTab === 'write' 
-                      ? 'bg-white text-zinc-900 shadow-sm' 
+                      ? 'bg-white text-zinc-900 shadow-xs' 
                       : 'text-zinc-600 hover:text-zinc-900'
                   }`}
                 >
@@ -430,9 +449,9 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('preview')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     activeTab === 'preview' 
-                      ? 'bg-white text-zinc-900 shadow-sm' 
+                      ? 'bg-white text-zinc-900 shadow-xs' 
                       : 'text-zinc-600 hover:text-zinc-900'
                   }`}
                 >
@@ -462,7 +481,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
             className="flex-1 overflow-y-auto flex flex-col scroll-smooth"
           >
             {/* Modal Body */}
-            <div className="flex-1 p-6 sm:p-8 space-y-6">
+            <div className="flex-1 p-4 sm:p-8 space-y-5 sm:space-y-6">
               {errorMessage && (
                 <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs sm:text-sm flex items-center gap-2.5 shadow-sm">
                   <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
@@ -472,15 +491,15 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
 
               {/* Author Status Card */}
               {currentUser ? (
-                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200">
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-50 border border-zinc-200 gap-2">
                   <div className="flex items-center gap-3">
                     <img 
                       src={currentUser.avatarUrl} 
                       alt={currentUser.name} 
-                      className="w-10 h-10 rounded-full object-cover border border-zinc-300 shadow-sm"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-zinc-300 shadow-sm shrink-0"
                     />
-                    <div>
-                      <div className="text-xs font-bold text-zinc-900">
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-zinc-900 truncate">
                         Publishing as {currentUser.name} {currentUser.surname}
                       </div>
                       {currentUser.bio && (
@@ -490,7 +509,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                       )}
                     </div>
                   </div>
-                  <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
+                  <span className="text-[10px] sm:text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 sm:py-1 rounded-full border border-emerald-200 shrink-0">
                     Verified Author
                   </span>
                 </div>
@@ -511,7 +530,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
               )}
 
               {activeTab === 'write' ? (
-                <div className="space-y-6">
+                <div className="space-y-5 sm:space-y-6">
                   
                   {/* Title Input */}
                   <div className="space-y-1.5">
@@ -523,7 +542,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="e.g. How I Built My First Offline-First App"
-                      className="w-full px-4 py-3 text-base sm:text-lg font-serif bg-zinc-50 border border-zinc-200 rounded-2xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all"
+                      className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-lg font-serif bg-zinc-50 border border-zinc-200 rounded-xl sm:rounded-2xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all"
                       required
                     />
                   </div>
@@ -545,7 +564,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                           }}
                           className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
                         >
-                          {isCustomCategory ? '← Pick from list' : '+ Add custom category'}
+                          {isCustomCategory ? '← Pick list' : '+ Add custom category'}
                         </button>
                       </div>
 
@@ -555,13 +574,13 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                             type="text"
                             value={customCategoryInput}
                             onChange={(e) => setCustomCategoryInput(e.target.value)}
-                            placeholder="e.g. Artificial Intelligence, Neuroscience, Web3..."
+                            placeholder="e.g. Artificial Intelligence, Neuroscience..."
                             className="w-full px-3.5 py-2.5 text-xs bg-zinc-50 border border-emerald-500 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white transition-all"
                             required
                             autoFocus
                           />
                           <p className="text-[10px] text-emerald-700 font-medium">
-                            ✓ Registered across platform &amp; formatted with Schema.org for Google &amp; Google News indexing
+                            ✓ Registered across platform &amp; formatted for Google News indexing
                           </p>
                         </div>
                       ) : (
@@ -680,7 +699,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                           onDragLeave={handleDragLeave}
                           onDrop={handleDrop}
                           onClick={() => fileInputRef.current?.click()}
-                          className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                          className={`border-2 border-dashed rounded-2xl p-5 sm:p-6 text-center cursor-pointer transition-all ${
                             isDragging 
                               ? 'border-zinc-900 bg-zinc-100' 
                               : 'border-zinc-300 hover:border-zinc-600 bg-zinc-50'
@@ -697,7 +716,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                               }
                             }}
                           />
-                          <Upload className="w-7 h-7 text-zinc-500 mx-auto mb-1.5" />
+                          <Upload className="w-6 h-6 sm:w-7 sm:h-7 text-zinc-500 mx-auto mb-1.5" />
                           <p className="text-xs sm:text-sm font-semibold text-zinc-800">
                             {isUploadingImage ? 'Compressing photo...' : 'Click to upload photo or drag & drop'}
                           </p>
@@ -809,7 +828,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                       onKeyDown={handleKeyDownTextarea}
                       rows={10}
                       placeholder="Write the body of your blog here... Highlight any word and click 'Insert Link' to turn it into a hyperlinked text."
-                      className="w-full px-4 py-3.5 text-sm sm:text-base bg-zinc-50 border border-t-0 border-zinc-200 rounded-b-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white leading-relaxed font-sans resize-y"
+                      className="w-full px-3.5 sm:px-4 py-3 sm:py-3.5 text-sm sm:text-base bg-zinc-50 border border-t-0 border-zinc-200 rounded-b-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white leading-relaxed font-sans resize-y"
                       required
                     />
                   </div>
@@ -829,7 +848,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                       </div>
                     )}
 
-                    <div className="p-6 sm:p-8 space-y-6">
+                    <div className="p-4 sm:p-8 space-y-5 sm:space-y-6">
                       <div className="flex items-center gap-2">
                         <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700">
                           {activeCategory}
@@ -839,7 +858,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                         </span>
                       </div>
 
-                      <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-zinc-900 leading-tight">
+                      <h1 className="font-serif text-xl sm:text-3xl font-semibold text-zinc-900 leading-tight">
                         {title || 'Untitled Blog Post'}
                       </h1>
 
@@ -863,7 +882,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                         </div>
                       )}
 
-                      <div className="pt-4 space-y-4 text-zinc-800 text-base leading-relaxed border-t border-zinc-100 font-sans">
+                      <div className="pt-4 space-y-4 text-zinc-800 text-sm sm:text-base leading-relaxed border-t border-zinc-100 font-sans">
                         {body ? (
                           renderFormattedBody(body)
                         ) : (
@@ -878,24 +897,24 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
           </form>
 
           {/* Modal Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-100 bg-zinc-50/70 shrink-0">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-t border-zinc-200 bg-white sticky bottom-0 z-20 shrink-0">
             <button
               type="button"
               onClick={() => {
                 resetForm();
                 onClose();
               }}
-              className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer"
+              className="px-3 sm:px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 transition-colors cursor-pointer"
             >
               Cancel
             </button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {activeTab === 'write' ? (
                 <button
                   type="button"
                   onClick={() => setActiveTab('preview')}
-                  className="px-4 py-2 text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-100 rounded-xl transition-colors cursor-pointer"
+                  className="px-3 sm:px-4 py-2 text-xs font-semibold text-zinc-700 bg-zinc-100 hover:bg-zinc-200 rounded-xl transition-colors cursor-pointer"
                 >
                   Preview
                 </button>
@@ -903,7 +922,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('write')}
-                  className="px-4 py-2 text-xs font-semibold text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-100 rounded-xl transition-colors cursor-pointer"
+                  className="px-3 sm:px-4 py-2 text-xs font-semibold text-zinc-700 bg-zinc-100 hover:bg-zinc-200 rounded-xl transition-colors cursor-pointer"
                 >
                   Back to Edit
                 </button>
@@ -913,7 +932,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                 type="button"
                 onClick={() => handleSubmit()}
                 disabled={isSubmitting || isUploadingImage}
-                className="px-5 py-2.5 bg-zinc-900 hover:bg-black text-white font-semibold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md disabled:opacity-50 cursor-pointer"
+                className="px-4 sm:px-5 py-2.5 bg-zinc-900 hover:bg-black text-white font-semibold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md disabled:opacity-50 cursor-pointer shrink-0"
               >
                 {isSubmitting ? 'Publishing...' : 'Publish Blog'}
               </button>
