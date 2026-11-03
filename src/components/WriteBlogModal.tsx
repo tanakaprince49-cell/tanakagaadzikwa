@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
 import { saveNewBlog, calculateReadTime, PRESET_COVER_IMAGES } from '../data/blogsData';
-import { compressImageFile } from '../utils/imageCompressor';
+import { compressImageFile, cropImageToAspect } from '../utils/imageCompressor';
 import { ImageCropperModal } from './ImageCropperModal';
 import { RichTextEditor } from './RichTextEditor';
 import { countWords, looksLikeHtml, normalizeBodyHtml, sanitizeHtml, stripHtml } from '../utils/richText';
@@ -240,11 +240,14 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
 
     try {
       // Auto-scale & compress client-side via canvas
-      const compressedUrl = await compressImageFile(file, 1400, 0.88);
+      const compressedUrl = await compressImageFile(file, 1600, 0.9);
       if (compressedUrl) {
+        // Always store a correctly sized 16:9 cover first, so the picture is
+        // never stretched or badly cropped even if the user closes the cropper.
+        const autoCroppedCover = await cropImageToAspect(compressedUrl, 16 / 9, 1600, 0.9);
         setOriginalImageUrl(compressedUrl);
-        setImageUrl(compressedUrl);
-        setIsCropperOpen(true); // Automatically open cropper modal for user alignment
+        setImageUrl(autoCroppedCover || compressedUrl);
+        setIsCropperOpen(true); // Let the user fine-tune the crop themselves
       } else {
         setErrorMessage('Failed to process image file. Please try a different photo.');
       }
@@ -457,15 +460,12 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                         Publishing as {currentUser.name} {currentUser.surname}
                       </div>
                       {currentUser.bio && (
-                        <p className="text-[11px] text-zinc-500 line-clamp-1">
+                        <p className="text-[11px] text-zinc-500 leading-snug">
                           {currentUser.bio}
                         </p>
                       )}
                     </div>
                   </div>
-                  <span className="text-[10px] sm:text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 sm:py-1 rounded-full border border-emerald-200 shrink-0">
-                    Verified Author
-                  </span>
                 </div>
               ) : (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-amber-50/70 border border-amber-200 gap-3">

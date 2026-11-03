@@ -83,14 +83,21 @@ if (typeof window !== 'undefined') {
           return b.id.localeCompare(a.id);
         });
 
-        inMemoryBlogs = firestoreBlogs;
-        try {
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(firestoreBlogs));
-        } catch {
-          // Ignore quota errors on local storage
+        // Never wipe a user's cached posts with an empty snapshot (offline first)
+        if (firestoreBlogs.length > 0) {
+          inMemoryBlogs = firestoreBlogs;
+          try {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(firestoreBlogs));
+          } catch {
+            // Ignore quota errors on local storage
+          }
         }
 
-        window.dispatchEvent(new CustomEvent('tg_blogs_updated', { detail: firestoreBlogs }));
+        window.dispatchEvent(
+          new CustomEvent('tg_blogs_updated', {
+            detail: firestoreBlogs.length > 0 ? firestoreBlogs : inMemoryBlogs,
+          })
+        );
       },
       (error) => {
         console.warn('Firestore onSnapshot error, falling back to local/cached blogs:', error.message);

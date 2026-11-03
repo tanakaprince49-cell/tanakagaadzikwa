@@ -200,58 +200,146 @@ export function setSingleBlogSeo(post: BlogPost) {
 
 /**
  * Author Profile SEO
- * High-ranking Google Person Profile markup for any registered writer.
+ *
+ * Makes the author's name + bio indexable: the bio is pushed into the meta
+ * description, the OpenGraph profile tags and a full schema.org ProfilePage /
+ * Person graph (description = bio, image = avatar, knowsAbout, worksFor and the
+ * list of stories the person has published).
  */
-export function setAuthorPageSeo(authorName: string, authorAvatar?: string, blogsCount: number = 0) {
-  const origin = typeof window !== 'undefined' && window.location.origin 
-    ? window.location.origin 
+export function setAuthorPageSeo(
+  authorName: string,
+  authorAvatar?: string,
+  blogsCount: number = 0,
+  authorBio?: string,
+  posts: Array<{ title: string; url: string; datePublished?: string }> = [],
+  knowsAbout: string[] = []
+) {
+  const origin = typeof window !== 'undefined' && window.location.origin
+    ? window.location.origin
     : 'https://www.tanakagaadzikwa.com';
-    
+
   const canonicalUrl = `${origin}/blogs?author=${encodeURIComponent(authorName)}`;
-  const title = `${authorName} – Author Profile & Published Stories | Tanaka Gaadzikwa`;
-  const description = `Read all ${blogsCount} articles and stories published by ${authorName} on the Tanaka Gaadzikwa open platform.`;
+  const cleanBio = (authorBio || '').replace(/\s+/g, ' ').trim();
+  const bioSnippet = cleanBio
+    ? `${cleanBio.slice(0, 155)}${cleanBio.length > 155 ? '...' : ''}`
+    : `${authorName} is a published author on Tanaka Gaadzikwa Blogs with ${blogsCount} ${
+        blogsCount === 1 ? 'story' : 'stories'
+      } on software, AI and startups.`;
+
+  const title = `${authorName} – Author Bio, Profile & Published Stories | Tanaka Gaadzikwa`;
+  const description = cleanBio
+    ? `${authorName}: ${bioSnippet} Read all ${blogsCount} ${blogsCount === 1 ? 'article' : 'articles'} by ${authorName}.`
+    : bioSnippet;
+
+  const nameParts = authorName.trim().split(/\s+/);
+  const firstName = nameParts[0] || authorName;
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
 
   document.title = title;
   updateMetaTag('name', 'description', description);
   updateMetaTag('name', 'author', authorName);
-  updateMetaTag('name', 'keywords', `${authorName}, ${authorName} blogs, ${authorName} author, ${authorName} profile, Tanaka Gaadzikwa, tech writing`);
-  updateMetaTag('name', 'robots', 'index, follow, max-image-preview:large');
-  updateMetaTag('name', 'googlebot', 'index, follow, max-image-preview:large');
+  updateMetaTag('name', 'keywords', `${authorName}, ${authorName} bio, ${authorName} biography, ${authorName} profile, ${authorName} blogs, ${authorName} author, Tanaka Gaadzikwa`);
+  updateMetaTag('name', 'robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+  updateMetaTag('name', 'googlebot', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
   updateLinkTag('canonical', canonicalUrl);
 
+  // OpenGraph "profile" namespace exposes the bio + real name to Google & socials
   updateMetaTag('property', 'og:type', 'profile');
-  updateMetaTag('property', 'og:title', title);
+  updateMetaTag('property', 'og:title', `${authorName} – Author Profile & Bio`);
   updateMetaTag('property', 'og:description', description);
   updateMetaTag('property', 'og:url', canonicalUrl);
+  updateMetaTag('property', 'profile:first_name', firstName);
+  if (lastName) updateMetaTag('property', 'profile:last_name', lastName);
+  updateMetaTag('property', 'profile:username', authorName);
+  updateMetaTag('property', 'og:site_name', 'Tanaka Gaadzikwa Blogs & News');
   if (authorAvatar) {
     updateMetaTag('property', 'og:image', authorAvatar);
+    updateMetaTag('property', 'og:image:alt', `${authorName} profile photo`);
     updateLinkTag('image_src', authorAvatar);
   }
 
-  updateMetaTag('name', 'twitter:card', 'summary');
-  updateMetaTag('name', 'twitter:title', title);
+  updateMetaTag('name', 'twitter:card', authorAvatar ? 'summary_large_image' : 'summary');
+  updateMetaTag('name', 'twitter:site', '@TGaadzikwa');
+  updateMetaTag('name', 'twitter:title', `${authorName} – Author Profile & Bio`);
   updateMetaTag('name', 'twitter:description', description);
+  if (authorAvatar) updateMetaTag('name', 'twitter:image', authorAvatar);
+
+  const personSchema = {
+    '@type': 'Person',
+    '@id': `${canonicalUrl}#person`,
+    'name': authorName,
+    'givenName': firstName,
+    ...(lastName ? { 'familyName': lastName } : {}),
+    'url': canonicalUrl,
+    'mainEntityOfPage': canonicalUrl,
+    'description': cleanBio || bioSnippet,
+    ...(authorAvatar
+      ? {
+          'image': {
+            '@type': 'ImageObject',
+            'url': authorAvatar,
+            'caption': `${authorName} profile photo`,
+          },
+          'thumbnailUrl': authorAvatar,
+        }
+      : {}),
+    'jobTitle': 'Writer & Contributor',
+    'worksFor': {
+      '@type': 'Organization',
+      'name': 'Tanaka Gaadzikwa Blogs',
+      'url': 'https://www.tanakagaadzikwa.com/',
+    },
+    'knowsAbout': knowsAbout.length
+      ? knowsAbout
+      : ['Technology', 'Artificial Intelligence', 'Software Development', 'Entrepreneurship', 'Startups'],
+    'knowsLanguage': 'en',
+  };
 
   const authorSchema = {
     '@context': 'https://schema.org',
-    '@type': 'ProfilePage',
-    '@id': `${canonicalUrl}#profile`,
-    'url': canonicalUrl,
-    'name': `${authorName} Author Profile`,
-    'mainEntity': {
-      '@type': 'Person',
-      'name': authorName,
-      'image': authorAvatar ? {
-        '@type': 'ImageObject',
-        'url': authorAvatar,
-        'caption': authorName
-      } : undefined,
-      'url': canonicalUrl,
-      'description': `Author with ${blogsCount} published articles on Tanaka Gaadzikwa open platform.`
-    }
+    '@graph': [
+      {
+        '@type': 'ProfilePage',
+        '@id': `${canonicalUrl}#profilepage`,
+        'url': canonicalUrl,
+        'name': `${authorName} – Author Profile, Bio & Published Stories`,
+        'description': description,
+        'inLanguage': 'en',
+        'isPartOf': {
+          '@type': 'WebSite',
+          'name': 'Tanaka Gaadzikwa Blogs & News',
+          'url': 'https://www.tanakagaadzikwa.com/',
+        },
+        'mainEntity': personSchema,
+        'about': personSchema,
+        ...(posts.length
+          ? {
+              'hasPart': {
+                '@type': 'ItemList',
+                'name': `Stories published by ${authorName}`,
+                'numberOfItems': posts.length,
+                'itemListElement': posts.slice(0, 25).map((post, index) => ({
+                  '@type': 'ListItem',
+                  'position': index + 1,
+                  'item': {
+                    '@type': 'BlogPosting',
+                    '@id': post.url,
+                    'url': post.url,
+                    'headline': post.title,
+                    'author': { '@id': `${canonicalUrl}#person` },
+                    ...(post.datePublished ? { 'datePublished': post.datePublished } : {}),
+                  },
+                })),
+              },
+            }
+          : {}),
+      },
+      personSchema,
+    ],
   };
 
   updateJsonLd('dynamic-blog-seo-ldjson', authorSchema);
+  updateJsonLd('dynamic-author-bio-ldjson', personSchema);
 }
 
 /**
@@ -324,5 +412,9 @@ export function resetHomeSeo() {
   const existing = document.getElementById('dynamic-blog-seo-ldjson');
   if (existing) {
     existing.remove();
+  }
+  const existingAuthor = document.getElementById('dynamic-author-bio-ldjson');
+  if (existingAuthor) {
+    existingAuthor.remove();
   }
 }

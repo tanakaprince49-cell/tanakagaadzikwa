@@ -9,3 +9,6 @@ coverage/
 .aistudio/
 *adminsdk*.json
 *service-account*.json
+
+# Keep the bun lockfile as the single source of truth
+package-lock.json

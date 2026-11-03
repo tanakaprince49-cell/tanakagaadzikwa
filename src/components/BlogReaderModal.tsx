@@ -187,7 +187,10 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
 
         {/* Author Card Component with Custom Profile Pic & Bio */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 rounded-3xl bg-zinc-50 border border-zinc-200 gap-4">
-          <div 
+          <div
+            itemProp="author"
+            itemScope
+            itemType="https://schema.org/Person"
             className={`flex items-start sm:items-center gap-4 ${onSelectAuthor ? 'cursor-pointer group/author' : ''}`}
             onClick={() => {
               if (onSelectAuthor) {
@@ -198,7 +201,8 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
             {post.authorAvatar ? (
               <img 
                 src={post.authorAvatar} 
-                alt={post.author} 
+                alt={`${post.author} profile photo`} 
+                itemProp="image"
                 className="w-14 h-14 rounded-full object-cover border-2 border-zinc-300 shadow-sm group-hover/author:border-zinc-900 transition-colors shrink-0"
               />
             ) : (
@@ -209,34 +213,48 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
 
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-base font-bold text-zinc-900 group-hover/author:underline">
+                <span itemProp="name" className="text-base font-bold text-zinc-900 group-hover/author:underline">
                   {post.author}
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                  Verified Author
+                <span itemProp="jobTitle" className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                  Author
                 </span>
               </div>
 
               {post.authorBio ? (
-                <p className="text-xs text-zinc-600 leading-relaxed max-w-lg">
+                <p itemProp="description" className="text-xs sm:text-sm text-zinc-600 leading-relaxed max-w-xl">
                   {post.authorBio}
                 </p>
               ) : (
                 <p className="text-xs text-zinc-500">
-                  Published author on TanakaGaadzikwa.com · Indexed Author Profile
+                  Published author on TanakaGaadzikwa.com
                 </p>
               )}
+
+              <a
+                href={`/blogs?author=${encodeURIComponent(post.author)}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onSelectAuthor) onSelectAuthor(post.author);
+                }}
+                className="inline-block text-[11px] font-semibold text-sky-700 hover:text-sky-900 underline underline-offset-2"
+              >
+                Read {post.author.split(' ')[0]}&apos;s full bio &amp; articles →
+              </a>
             </div>
           </div>
 
           {onSelectAuthor && (
-            <button
-              type="button"
-              onClick={() => onSelectAuthor(post.author)}
+            <a
+              href={`/blogs?author=${encodeURIComponent(post.author)}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onSelectAuthor(post.author);
+              }}
               className="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-200/80 hover:bg-zinc-300 text-zinc-800 transition-colors self-start sm:self-center shrink-0 cursor-pointer"
             >
-              View Author's Blogs →
-            </button>
+              View Author&apos;s Bio &amp; Blogs →
+            </a>
           )}
         </div>
 

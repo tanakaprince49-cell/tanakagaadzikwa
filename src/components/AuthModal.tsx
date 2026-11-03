@@ -199,7 +199,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="p-4 rounded-2xl bg-zinc-50 border border-zinc-200/80 space-y-2.5">
                 <div className="flex items-center gap-2 text-xs font-semibold text-zinc-800">
                   <Sparkles className="w-4 h-4 text-sky-500" />
-                  <span>Verified Author Privileges</span>
+                  <span>Author Privileges</span>
                 </div>
                 <ul className="text-xs text-zinc-600 space-y-1.5 pl-1">
                   <li className="flex items-center gap-2">
@@ -208,7 +208,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Get your own verified author profile indexed on Google &amp; Google News</span>
+                    <span>Get your own author bio &amp; profile indexed on Google &amp; Google News</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />

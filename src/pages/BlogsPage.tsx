@@ -12,7 +12,6 @@ import {
   X,
   Sparkles,
   Tag,
-  CheckCircle2,
   Trash2
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
@@ -128,6 +127,12 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
       avatarUrl: firstWithAvatar || (isCurrent ? currentUser.avatarUrl : undefined),
       bio: firstWithBio || (isCurrent ? currentUser.bio : undefined),
       count: authorBlogs.length,
+      posts: authorBlogs.map((blog) => ({
+        title: blog.title,
+        url: `https://www.tanakagaadzikwa.com/blogs#${blog.slug || blog.id}`,
+        datePublished: blog.publishedDate,
+      })),
+      topics: Array.from(new Set(authorBlogs.map((b) => b.category).filter(Boolean))) as string[],
     };
   }, [selectedAuthor, blogs, currentUser]);
 
@@ -136,7 +141,14 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
     if (selectedPost) {
       setSingleBlogSeo(selectedPost);
     } else if (selectedAuthor && authorProfile) {
-      setAuthorPageSeo(authorProfile.name, authorProfile.avatarUrl, authorProfile.count);
+      setAuthorPageSeo(
+        authorProfile.name,
+        authorProfile.avatarUrl,
+        authorProfile.count,
+        authorProfile.bio,
+        authorProfile.posts,
+        authorProfile.topics
+      );
     } else {
       setBlogsHubSeo(blogs.length);
     }
@@ -331,13 +343,18 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
         
         {/* Active Author Profile Banner */}
         {authorProfile && (
-          <div className="bg-gradient-to-r from-zinc-50 via-white to-zinc-50 border-2 border-zinc-900/10 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm space-y-4">
+          <div
+            itemScope
+            itemType="https://schema.org/Person"
+            className="bg-gradient-to-r from-zinc-50 via-white to-zinc-50 border-2 border-zinc-900/10 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm space-y-4"
+          >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-start sm:items-center gap-3.5 sm:gap-4">
                 {authorProfile.avatarUrl ? (
                   <img 
                     src={authorProfile.avatarUrl} 
-                    alt={authorProfile.name} 
+                    alt={`${authorProfile.name} profile photo`} 
+                    itemProp="image"
                     className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-zinc-900 shadow-sm shrink-0"
                   />
                 ) : (
@@ -347,16 +364,12 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                 )}
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-lg sm:text-2xl font-serif font-bold text-zinc-900">
+                    <h2 itemProp="name" className="text-lg sm:text-2xl font-serif font-bold text-zinc-900">
                       {authorProfile.name}
                     </h2>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      <span>Verified Author</span>
-                    </span>
                   </div>
                   {authorProfile.bio && (
-                    <p className="text-xs text-zinc-700 leading-relaxed max-w-lg">
+                    <p itemProp="description" className="text-xs sm:text-sm text-zinc-700 leading-relaxed max-w-xl">
                       {authorProfile.bio}
                     </p>
                   )}
@@ -378,7 +391,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
             <div className="pt-2 border-t border-zinc-200/70 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
               <div className="flex items-center gap-1.5 text-emerald-700 font-medium">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Google &amp; Google News Indexed: Author Profile &amp; Schema.org Person</span>
+                <span>Author bio indexed on Google &amp; Google News · Schema.org Person + ProfilePage</span>
               </div>
               <span className="font-mono text-[10px] sm:text-[11px] text-zinc-400 truncate max-w-full">
                 URL: https://www.tanakagaadzikwa.com/blogs?author={encodeURIComponent(authorProfile.name)}
@@ -597,18 +610,23 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
 
                     {/* Author Card Footer */}
                     <div className="pt-4 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500">
-                      <div 
+                      <a
+                        href={`/blogs?author=${encodeURIComponent(blog.author)}`}
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           handleSelectAuthor(blog.author);
                         }}
-                        className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group/author"
-                        title={`Click to view ${blog.author}'s profile & articles`}
+                        itemScope
+                        itemType="https://schema.org/Person"
+                        className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group/author no-underline"
+                        title={`View ${blog.author}'s bio, profile & articles`}
                       >
                         {blog.authorAvatar ? (
                           <img 
                             src={blog.authorAvatar} 
-                            alt={blog.author} 
+                            alt={`${blog.author} profile photo`} 
+                            itemProp="image"
                             className="w-7 h-7 rounded-full object-cover border border-zinc-200 group-hover/author:border-zinc-900"
                           />
                         ) : (
@@ -617,12 +635,13 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                           </div>
                         )}
                         <div className="flex flex-col">
-                          <span className="font-medium text-zinc-900 group-hover/author:underline">
+                          <span itemProp="name" className="font-medium text-zinc-900 group-hover/author:underline">
                             {blog.author}
                           </span>
-                          <span className="text-[10px] text-zinc-400">Author Profile</span>
+                          <span className="text-[10px] text-zinc-400">Author Bio &amp; Profile</span>
+                          {blog.authorBio && <meta itemProp="description" content={blog.authorBio} />}
                         </div>
-                      </div>
+                      </a>
 
                       <span className="text-zinc-900 font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
                         <span>Read</span>
