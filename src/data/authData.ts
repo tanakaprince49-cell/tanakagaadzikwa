@@ -83,13 +83,45 @@ export async function syncFirebaseUserToProfile(fbUser: User, customBio?: string
 }
 
 // Sign in with Google using Firebase Auth
-export async function signInWithGoogleAuth(): Promise<{ user?: UserProfile; error?: string }> {
+export async function signInWithGoogleAuth(): Promise<{ user?: UserProfile; error?: string; cancelled?: boolean }> {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const profile = await syncFirebaseUserToProfile(result.user);
     return { user: profile };
-  } catch (err: unknown) {
-    console.error('Google Sign-In failed:', err);
+  } catch (err: any) {
+    const code = err?.code || '';
+    const message = err?.message || '';
+
+    // Handle user closing popup without completing
+    if (
+      code === 'auth/popup-closed-by-user' ||
+      code === 'auth/cancelled-popup-request' ||
+      message.includes('popup-closed-by-user')
+    ) {
+      return { cancelled: true };
+    }
+
+    // Handle browser blocking popup window
+    if (code === 'auth/popup-blocked') {
+      return { error: 'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.' };
+    }
+
+    // Handle domain not authorized in Firebase Console
+    if (code === 'auth/unauthorized-domain' || message.includes('unauthorized-domain')) {
+      const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
+      return {
+        error: `Domain "${currentHost}" is not authorized in your Firebase project (${auth.app.options.projectId}). Please add "${currentHost}" and "tanakagaadzikwa.com" in Firebase Console > Authentication > Settings > Authorized domains.`,
+      };
+    }
+
+    // Handle Google provider not enabled in Firebase Console
+    if (code === 'auth/operation-not-allowed') {
+      return {
+        error: 'Google sign-in is not enabled in Firebase Console yet. Please enable "Google" under Firebase Console > Authentication > Sign-in method.',
+      };
+    }
+
+    console.warn('Google Sign-In response status:', code || message);
     const msg = err instanceof Error ? err.message : 'Google sign-in failed. Please try again.';
     return { error: msg };
   }

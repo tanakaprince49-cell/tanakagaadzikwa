@@ -76,11 +76,19 @@ if (typeof window !== 'undefined') {
   testConnection();
 }
 
-export async function signInWithGoogle(): Promise<User> {
+export async function signInWithGoogle(): Promise<User | null> {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (err: unknown) {
+  } catch (err: any) {
+    if (
+      err?.code === 'auth/popup-closed-by-user' ||
+      err?.code === 'auth/cancelled-popup-request' ||
+      err?.message?.includes('popup-closed-by-user')
+    ) {
+      // User closed the popup or cancelled - graceful return null
+      return null;
+    }
     console.error('Google Sign-In failed', err);
     throw err;
   }

@@ -43,14 +43,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsGoogleLoading(true);
     try {
       const res = await signInWithGoogleAuth();
-      if (res.error) {
+      if (res.cancelled) {
+        // User voluntarily closed the Google sign-in window; quietly reset loading state
+        setErrorMessage(null);
+      } else if (res.error) {
         setErrorMessage(res.error);
       } else if (res.user) {
         onSuccess(res.user);
         onClose();
       }
     } catch (err) {
-      console.error('Google Sign In error:', err);
+      console.warn('Google Sign In caught exception:', err);
       setErrorMessage('Could not sign in with Google. Please try again.');
     } finally {
       setIsGoogleLoading(false);
