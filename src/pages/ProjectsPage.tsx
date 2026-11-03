@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { projectsData } from '../data/projectsData';
 import { Project } from '../types';
 import { ExternalLink } from 'lucide-react';
+import { setProjectsSeo } from '../utils/seo';
 
 interface ProjectsPageProps {
   onOpenProject?: (project: Project) => void;
+  onNavigateBlogs?: () => void;
 }
 
 export const ProjectsPage: React.FC<ProjectsPageProps> = () => {
+  useEffect(() => {
+    setProjectsSeo();
+  }, []);
+
   const linkup = projectsData.find((p) => p.id === 'linkup') || projectsData[0];
 
   return (

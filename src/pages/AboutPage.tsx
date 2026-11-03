@@ -1,12 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Compass, Code, Brain, Target, ShieldCheck } from 'lucide-react';
+import { setAboutSeo } from '../utils/seo';
 
 interface AboutPageProps {
-  setActiveTab: (tab: string) => void;
+  setActiveTab?: (tab: string) => void;
   onOpenContact?: () => void;
+  onNavigateHome?: () => void;
 }
 
-export const AboutPage: React.FC<AboutPageProps> = ({ setActiveTab }) => {
+export const AboutPage: React.FC<AboutPageProps> = ({ onOpenContact }) => {
+  // Unique title, canonical + ProfilePage/Person structured data for this route
+  useEffect(() => {
+    setAboutSeo();
+  }, []);
+
   return (
     <div className="w-full py-12 lg:py-20">
       <div className="mx-auto max-w-4xl px-6 lg:px-8 space-y-16">
@@ -100,15 +107,12 @@ export const AboutPage: React.FC<AboutPageProps> = ({ setActiveTab }) => {
           
           <div className="p-4 rounded-xl bg-[#0F1420] border border-[#1F293D] flex items-center justify-between text-xs">
             <span className="text-[#94A3B8]">Interested in how LINKUP works under the hood?</span>
-            <button
-              onClick={() => {
-                setActiveTab('projects');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+            <a
+              href="/projects"
               className="text-[#38BDF8] hover:underline font-medium"
             >
               Explore LINKUP Architecture →
-            </button>
+            </a>
           </div>
         </section>
 

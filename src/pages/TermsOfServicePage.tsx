@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft, BookOpen, ShieldCheck, Scale, FileCheck, Mail, Globe } from 'lucide-react';
+import { setTermsSeo } from '../utils/seo';
 
 interface TermsOfServicePageProps {
   onNavigateHome: () => void;
@@ -10,6 +11,10 @@ export const TermsOfServicePage: React.FC<TermsOfServicePageProps> = ({
   onNavigateHome,
   onNavigateBlogs,
 }) => {
+  useEffect(() => {
+    setTermsSeo();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0B1120] text-zinc-200 py-16 px-6 sm:px-8 lg:px-16 selection:bg-sky-500/30 selection:text-white">
       <div className="max-w-4xl mx-auto">

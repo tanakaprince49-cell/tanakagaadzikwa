@@ -41,6 +41,7 @@ import { getCurrentUser } from '../data/authData';
 import { WriteBlogModal } from '../components/WriteBlogModal';
 import { BlogReaderModal } from '../components/BlogReaderModal';
 import { AuthModal } from '../components/AuthModal';
+import { setHomeSeo } from '../utils/seo';
 
 type HeadlineSection = 
   | 'overview' 
@@ -57,6 +58,11 @@ interface HomePageProps {
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigateToBlogs }) => {
   const linkup = projectsData.find((p) => p.id === 'linkup') || projectsData[0];
+
+  // Home page title, canonical, OG tags and the Person/FAQ/Organization entity graph
+  useEffect(() => {
+    setHomeSeo();
+  }, []);
 
   // Active section state
   const [activeHeadline, setActiveHeadline] = useState<HeadlineSection>(() => {

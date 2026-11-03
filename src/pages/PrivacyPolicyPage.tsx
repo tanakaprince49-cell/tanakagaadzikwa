@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft, Shield, Lock, Eye, FileText, Mail, Globe, CheckCircle } from 'lucide-react';
+import { setPrivacySeo } from '../utils/seo';
 
 interface PrivacyPolicyPageProps {
   onNavigateHome: () => void;
@@ -10,6 +11,10 @@ export const PrivacyPolicyPage: React.FC<PrivacyPolicyPageProps> = ({
   onNavigateHome,
   onNavigateBlogs,
 }) => {
+  useEffect(() => {
+    setPrivacySeo();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0B1120] text-zinc-200 py-16 px-6 sm:px-8 lg:px-16 selection:bg-sky-500/30 selection:text-white">
       <div className="max-w-4xl mx-auto">

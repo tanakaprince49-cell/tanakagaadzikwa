@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { nowData } from '../data/nowData';
+import { setNowSeo } from '../utils/seo';
 import { 
   Clock, 
   MapPin, 
@@ -19,6 +20,10 @@ interface NowPageProps {
 }
 
 export const NowPage: React.FC<NowPageProps> = ({ onOpenContact }) => {
+  useEffect(() => {
+    setNowSeo();
+  }, []);
+
   return (
     <div className="w-full py-12 lg:py-20">
       <div className="mx-auto max-w-4xl px-6 lg:px-8 space-y-16">

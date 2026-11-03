@@ -20,7 +20,7 @@ import { getCurrentUser, signOut } from '../data/authData';
 import { WriteBlogModal } from '../components/WriteBlogModal';
 import { BlogReaderModal } from '../components/BlogReaderModal';
 import { AuthModal } from '../components/AuthModal';
-import { setBlogsHubSeo, setSingleBlogSeo, setAuthorPageSeo, resetHomeSeo } from '../utils/seo';
+import { setBlogsHubSeo, setSingleBlogSeo, setAuthorPageSeo } from '../utils/seo';
 
 interface BlogsPageProps {
   onNavigateHome: () => void;
@@ -29,7 +29,14 @@ interface BlogsPageProps {
 
 export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPostSlug }) => {
   const [blogs, setBlogs] = useState<BlogPost[]>(() => getStoredBlogs());
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState<string>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('q') || params.get('search') || '';
+    } catch {
+      return '';
+    }
+  });
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => getCurrentUser());
   
   // Filtering states
@@ -150,11 +157,8 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
         authorProfile.topics
       );
     } else {
-      setBlogsHubSeo(blogs.length);
+      setBlogsHubSeo(blogs.length, blogs);
     }
-    return () => {
-      resetHomeSeo();
-    };
   }, [selectedPost, selectedAuthor, authorProfile, blogs.length]);
 
   // Combined Filtered Blogs
