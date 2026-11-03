@@ -260,13 +260,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToBlogs }) => {
                 <div className="space-y-2 text-center sm:text-left">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 text-sky-400 text-xs font-mono">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Open Community Publishing &amp; Super SEO</span>
+                    <span>Open Community Publishing &amp; Google News Indexing</span>
                   </div>
                   <h3 className="font-serif text-2xl sm:text-3xl text-white font-normal">
                     Blogs &amp; Perspectives Hub
                   </h3>
                   <p className="text-xs sm:text-sm text-zinc-300 max-w-xl leading-relaxed">
-                    Read articles by Tanaka and community authors, publish your own story with custom categories and read times, and get your own verified Google author page.
+                    Read articles by Tanaka and community authors, publish your own story with custom categories and read times, and get your own verified Google &amp; Google News author profile.
                   </p>
                 </div>
 
@@ -594,9 +594,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToBlogs }) => {
                   <span className="text-xs font-mono text-sky-400">Open Publishing</span>
                   <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/20">Live</span>
                 </div>
-                <h3 className="font-serif text-2xl text-white">Community Blogs &amp; Super SEO</h3>
+                <h3 className="font-serif text-2xl text-white">Community Blogs &amp; Google News Indexing</h3>
                 <p className="text-xs text-zinc-300 leading-relaxed">
-                  A high-speed publishing engine integrated with Firebase Firestore and Google Auth, enabling authors to publish with customized read times and get their own recognized Super SEO index page.
+                  A high-speed publishing engine integrated with Firebase Firestore and Google Auth, enabling authors to publish with customized read times, high-res cover photos, and instant Schema.org indexing for Google and Google News.
                 </p>
               </div>
             </div>

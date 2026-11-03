@@ -66,7 +66,10 @@ export default function App() {
       {/* Route Switcher */}
       <main className="flex-1 w-full">
         {isBlogsRoute ? (
-          <BlogsPage onNavigateHome={() => navigateTo('/')} />
+          <BlogsPage 
+            onNavigateHome={() => navigateTo('/')} 
+            initialPostSlug={currentPath.startsWith('/blogs/') ? decodeURIComponent(currentPath.replace('/blogs/', '')) : undefined}
+          />
         ) : isPrivacyRoute ? (
           <PrivacyPolicyPage
             onNavigateHome={() => navigateTo('/')}

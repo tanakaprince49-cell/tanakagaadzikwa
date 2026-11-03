@@ -77,7 +77,7 @@ export const Hero: React.FC<HeroProps> = ({
     { id: 'companies', label: 'Ventures & LINKUP', number: '03', desc: 'Flagship AI matchmaking platform for builders' },
     { id: 'projects', label: 'Projects & Experiments', number: '04', desc: 'Software prototypes and applications' },
     { id: 'ai-tech', label: 'AI & Technology', number: '05', desc: 'Conversational agents, vector search & emerging markets' },
-    { id: 'blogs', label: 'Blogs & Stories', number: '06', desc: 'Open publishing, custom read times & Super SEO' },
+    { id: 'blogs', label: 'Blogs & Stories', number: '06', desc: 'Open publishing, Google News indexing & author profiles' },
     { id: 'philosophy', label: 'Philosophy & Recognition', number: '07', desc: 'Startup Cupid, Minister of AI & core principles' },
     { id: 'contact', label: 'Connect & Inquiries', number: '08', desc: 'Direct message dispatch & digital headquarters' },
   ];

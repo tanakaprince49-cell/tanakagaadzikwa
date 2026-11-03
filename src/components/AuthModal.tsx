@@ -208,7 +208,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Get your own recognized Google Super SEO author page</span>
+                    <span>Get your own verified author profile indexed on Google &amp; Google News</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -351,7 +351,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className="w-full px-3.5 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white transition-all font-sans resize-none leading-relaxed"
                 />
                 <span className="text-[10px] text-zinc-400">
-                  This bio is shown on all your published blogs and indexed in your Super SEO Author Profile.
+                  This bio is shown on all your published blogs and indexed in your Google &amp; Google News author profile.
                 </span>
               </div>
 

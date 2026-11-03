@@ -130,7 +130,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
     };
   }, [selectedAuthor, blogs, currentUser]);
 
-  // Super SEO Synchronization
+  // Google News, Discover & Search SEO Synchronization
   useEffect(() => {
     if (selectedPost) {
       setSingleBlogSeo(selectedPost);
@@ -310,7 +310,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
             Blogs &amp; Stories
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-zinc-600 max-w-lg mx-auto leading-relaxed px-2">
-            Publish stories, custom categories, and personal perspectives. Authors get their own recognized Super SEO profile indexed on Google.
+            Publish stories, custom categories, and personal perspectives. Articles and author profiles are structured for rapid indexing on Google and Google News.
           </p>
 
           <div className="pt-1.5">
@@ -377,7 +377,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
             <div className="pt-2 border-t border-zinc-200/70 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
               <div className="flex items-center gap-1.5 text-emerald-700 font-medium">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Google Super SEO: Author Profile &amp; Schema.org Person indexed</span>
+                <span>Google &amp; Google News Indexed: Author Profile &amp; Schema.org Person</span>
               </div>
               <span className="font-mono text-[10px] sm:text-[11px] text-zinc-400 truncate max-w-full">
                 URL: https://www.tanakagaadzikwa.com/blogs?author={encodeURIComponent(authorProfile.name)}
@@ -484,7 +484,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
               No Blogs Published Yet
             </h2>
             <p className="text-xs text-zinc-500 leading-relaxed max-w-sm mx-auto">
-              Sign in with Google to share insights, stories, or perspectives and get your own verified Super SEO author page.
+              Sign in with Google to share insights, stories, or perspectives and get your own verified author profile indexed on Google &amp; Google News.
             </p>
             <div className="pt-2">
               <button
@@ -524,17 +524,18 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                 <article
                   key={blog.id}
                   itemScope
-                  itemType="https://schema.org/BlogPosting"
+                  itemType="https://schema.org/NewsArticle"
                   onClick={() => setSelectedPost(blog)}
                   className="bg-white border border-zinc-200 hover:border-zinc-400 rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between cursor-pointer group shadow-sm hover:shadow-md relative"
                 >
                   {blog.imageUrl && (
-                    <div className="aspect-[16/9] w-full overflow-hidden bg-zinc-100">
+                    <div className="aspect-[16/9] w-full overflow-hidden bg-zinc-100 relative">
                       <img 
                         src={blog.imageUrl} 
                         alt={`${blog.title} - Cover photo by ${blog.author}`}
                         itemProp="image"
                         loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     </div>
@@ -546,6 +547,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                       <div className="flex items-center justify-between gap-2">
                         <button
                           type="button"
+                          itemProp="articleSection"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedCategory(blog.category || 'General');
@@ -564,7 +566,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
 
                       {/* Date */}
                       <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5" itemProp="datePublished">
                           <Calendar className="w-3 h-3 text-zinc-400" />
                           <span>{blog.publishedDate}</span>
                         </div>
@@ -583,11 +585,11 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                         )}
                       </div>
 
-                      <h3 className="font-serif text-xl font-medium text-zinc-900 group-hover:text-black transition-colors leading-snug">
+                      <h3 itemProp="headline" className="font-serif text-xl font-medium text-zinc-900 group-hover:text-black transition-colors leading-snug">
                         {blog.title}
                       </h3>
 
-                      <p className="text-xs text-zinc-600 line-clamp-3 leading-relaxed">
+                      <p itemProp="description" className="text-xs text-zinc-600 line-clamp-3 leading-relaxed">
                         {blog.excerpt}
                       </p>
                     </div>

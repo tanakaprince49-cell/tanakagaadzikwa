@@ -39,6 +39,25 @@ function writeJsonFile<T>(filePath: string, data: T): void {
   }
 }
 
+function escapeXml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT || 3000;
@@ -167,6 +186,125 @@ async function startServer() {
     res.json(safeUsers);
   });
 
+  // Dynamic Google Image & Web Sitemap endpoint
+  app.get(['/sitemap.xml', '/api/sitemap.xml'], (_req, res) => {
+    const blogs: any[] = readJsonFile(BLOGS_FILE);
+    const today = new Date().toISOString().split('T')[0];
+
+    const staticRoutes = [
+      { loc: 'https://www.tanakagaadzikwa.com/', priority: '1.0', changefreq: 'daily', lastmod: today },
+      { loc: 'https://www.tanakagaadzikwa.com/about', priority: '0.9', changefreq: 'weekly', lastmod: today },
+      { loc: 'https://www.tanakagaadzikwa.com/projects', priority: '0.9', changefreq: 'weekly', lastmod: today },
+      { loc: 'https://www.tanakagaadzikwa.com/now', priority: '0.8', changefreq: 'weekly', lastmod: today },
+      { loc: 'https://www.tanakagaadzikwa.com/blogs', priority: '1.0', changefreq: 'daily', lastmod: today },
+      { loc: 'https://www.tanakagaadzikwa.com/contact', priority: '0.8', changefreq: 'monthly', lastmod: today },
+      { loc: 'https://www.tanakagaadzikwa.com/privacy', priority: '0.7', changefreq: 'monthly', lastmod: today },
+      { loc: 'https://www.tanakagaadzikwa.com/terms', priority: '0.7', changefreq: 'monthly', lastmod: today },
+    ];
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
+    xml += `        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
+
+    // Static pages
+    for (const route of staticRoutes) {
+      xml += `  <url>\n`;
+      xml += `    <loc>${route.loc}</loc>\n`;
+      xml += `    <lastmod>${route.lastmod}</lastmod>\n`;
+      xml += `    <changefreq>${route.changefreq}</changefreq>\n`;
+      xml += `    <priority>${route.priority}</priority>\n`;
+      if (route.loc === 'https://www.tanakagaadzikwa.com/' || route.loc === 'https://www.tanakagaadzikwa.com/blogs') {
+        xml += `    <image:image>\n`;
+        xml += `      <image:loc>https://i.ibb.co/pvvN63sV/20260526-181511.webp</image:loc>\n`;
+        xml += `      <image:title>Tanaka Gaadzikwa - Young Entrepreneur, Startup Cupid &amp; Minister of AI</image:title>\n`;
+        xml += `      <image:caption>Official portrait of Tanaka Gaadzikwa from Harare, Zimbabwe.</image:caption>\n`;
+        xml += `    </image:image>\n`;
+      }
+      xml += `  </url>\n`;
+    }
+
+    // Dynamic blog articles & pictures
+    for (const post of blogs) {
+      const slug = post.slug || post.id;
+      const postUrl = `https://www.tanakagaadzikwa.com/blogs/${encodeURIComponent(slug)}`;
+      xml += `  <url>\n`;
+      xml += `    <loc>${postUrl}</loc>\n`;
+      xml += `    <lastmod>${today}</lastmod>\n`;
+      xml += `    <changefreq>weekly</changefreq>\n`;
+      xml += `    <priority>0.9</priority>\n`;
+      if (post.imageUrl) {
+        xml += `    <image:image>\n`;
+        xml += `      <image:loc>${escapeXml(post.imageUrl)}</image:loc>\n`;
+        xml += `      <image:title>${escapeXml(post.title)} - Cover Photo</image:title>\n`;
+        xml += `      <image:caption>${escapeXml(post.excerpt || post.title)} - Published by ${escapeXml(post.author)}</image:caption>\n`;
+        xml += `    </image:image>\n`;
+      }
+      xml += `  </url>\n`;
+    }
+
+    xml += `</urlset>`;
+
+    res.set('Content-Type', 'application/xml; charset=utf-8');
+    res.send(xml);
+  });
+
+  // Dedicated Google News Sitemap endpoint
+  app.get(['/sitemap-news.xml', '/api/sitemap-news.xml'], (_req, res) => {
+    const blogs: any[] = readJsonFile(BLOGS_FILE);
+    const today = new Date().toISOString().split('T')[0];
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n`;
+    xml += `        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"\n`;
+    xml += `        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
+
+    // Always include blogs hub in news sitemap
+    xml += `  <url>\n`;
+    xml += `    <loc>https://www.tanakagaadzikwa.com/blogs</loc>\n`;
+    xml += `    <news:news>\n`;
+    xml += `      <news:publication>\n`;
+    xml += `        <news:name>Tanaka Gaadzikwa News &amp; Blogs</news:name>\n`;
+    xml += `        <news:language>en</news:language>\n`;
+    xml += `      </news:publication>\n`;
+    xml += `      <news:publication_date>${today}</news:publication_date>\n`;
+    xml += `      <news:title>Tanaka Gaadzikwa Blogs &amp; Technology Perspectives</news:title>\n`;
+    xml += `    </news:news>\n`;
+    xml += `    <image:image>\n`;
+    xml += `      <image:loc>https://i.ibb.co/pvvN63sV/20260526-181511.webp</image:loc>\n`;
+    xml += `      <image:title>Tanaka Gaadzikwa Blogs &amp; News</image:title>\n`;
+    xml += `    </image:image>\n`;
+    xml += `  </url>\n`;
+
+    // Include blog articles
+    for (const post of blogs) {
+      const slug = post.slug || post.id;
+      const postUrl = `https://www.tanakagaadzikwa.com/blogs/${encodeURIComponent(slug)}`;
+      xml += `  <url>\n`;
+      xml += `    <loc>${postUrl}</loc>\n`;
+      xml += `    <news:news>\n`;
+      xml += `      <news:publication>\n`;
+      xml += `        <news:name>Tanaka Gaadzikwa News &amp; Blogs</news:name>\n`;
+      xml += `        <news:language>en</news:language>\n`;
+      xml += `      </news:publication>\n`;
+      xml += `      <news:publication_date>${today}</news:publication_date>\n`;
+      xml += `      <news:title>${escapeXml(post.title)}</news:title>\n`;
+      xml += `    </news:news>\n`;
+      if (post.imageUrl) {
+        xml += `    <image:image>\n`;
+        xml += `      <image:loc>${escapeXml(post.imageUrl)}</image:loc>\n`;
+        xml += `      <image:title>${escapeXml(post.title)}</image:title>\n`;
+        xml += `      <image:caption>${escapeXml(post.excerpt || post.title)}</image:caption>\n`;
+        xml += `    </image:image>\n`;
+      }
+      xml += `  </url>\n`;
+    }
+
+    xml += `</urlset>`;
+
+    res.set('Content-Type', 'application/xml; charset=utf-8');
+    res.send(xml);
+  });
+
   // Vite development middleware
   const vite = await createViteServer({
     server: { middlewareMode: true },
@@ -175,11 +313,68 @@ async function startServer() {
 
   app.use(vite.middlewares);
 
+  // SSR / HTML template renderer with Pre-rendered Google News & SEO tags for crawlers
   app.use('*', async (req, res, next) => {
     const url = req.originalUrl;
     try {
       let template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
       template = await vite.transformIndexHtml(url, template);
+
+      // Pre-render blog metadata when viewing a blog or blogs directory
+      const blogs: any[] = readJsonFile(BLOGS_FILE);
+      let matchedPost: any = null;
+
+      if (url.startsWith('/blogs/')) {
+        const slug = decodeURIComponent(url.replace('/blogs/', '').split('?')[0].split('#')[0]);
+        matchedPost = blogs.find((b) => b.slug === slug || b.id === slug);
+      }
+
+      if (matchedPost) {
+        const cleanExcerpt = escapeHtml(matchedPost.excerpt || matchedPost.body.slice(0, 160));
+        const postTitle = escapeHtml(matchedPost.title);
+        const authorName = escapeHtml(matchedPost.author);
+        const coverImage = matchedPost.imageUrl || 'https://i.ibb.co/pvvN63sV/20260526-181511.webp';
+        const directUrl = `https://www.tanakagaadzikwa.com/blogs/${matchedPost.slug || matchedPost.id}`;
+
+        // Inject dynamic Title
+        template = template.replace(
+          /<title>.*?<\/title>/,
+          `<title>${postTitle} by ${authorName} | Tanaka Gaadzikwa</title>`
+        );
+
+        // Inject OpenGraph, Twitter & Google News pre-rendered meta tags
+        const dynamicMetaTags = `
+    <!-- Google News & Discover Pre-rendered Meta Tags -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot-news" content="index, follow" />
+    <meta name="news_keywords" content="${escapeHtml(matchedPost.category || 'Technology')}, ${authorName}, Tanaka Gaadzikwa, Technology, Startups" />
+    <meta property="article:published_time" content="${new Date().toISOString()}" />
+    <meta property="article:section" content="${escapeHtml(matchedPost.category || 'Technology')}" />
+    <meta property="article:author" content="${authorName}" />
+    
+    <!-- OpenGraph Image & Preview Tags -->
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="${postTitle} – by ${authorName}" />
+    <meta property="og:description" content="${cleanExcerpt}" />
+    <meta property="og:url" content="${directUrl}" />
+    <meta property="og:image" content="${coverImage}" />
+    <meta property="og:image:secure_url" content="${coverImage}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="675" />
+    <meta property="og:image:alt" content="${postTitle} - Cover image" />
+    <link rel="image_src" href="${coverImage}" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${postTitle} – by ${authorName}" />
+    <meta name="twitter:description" content="${cleanExcerpt}" />
+    <meta name="twitter:image" content="${coverImage}" />
+        `;
+
+        template = template.replace('</head>', `${dynamicMetaTags}\n  </head>`);
+      }
+
       res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
     } catch (e: any) {
       vite.ssrFixStacktrace(e);

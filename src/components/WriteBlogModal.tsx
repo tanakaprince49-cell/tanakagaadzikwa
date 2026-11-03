@@ -464,7 +464,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                           autoFocus
                         />
                         <p className="text-[10px] text-emerald-700 font-medium">
-                          ✓ Registered across platform &amp; automatically added to Super SEO metadata
+                          ✓ Registered across platform &amp; formatted with Schema.org for Google &amp; Google News indexing
                         </p>
                       </div>
                     ) : (

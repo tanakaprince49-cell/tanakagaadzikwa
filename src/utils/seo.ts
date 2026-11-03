@@ -10,14 +10,14 @@ function updateMetaTag(attributeName: string, attributeValue: string, content: s
   element.setAttribute('content', content);
 }
 
-function updateCanonicalUrl(url: string) {
-  let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+function updateLinkTag(rel: string, href: string) {
+  let link = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
   if (!link) {
     link = document.createElement('link');
-    link.setAttribute('rel', 'canonical');
+    link.setAttribute('rel', rel);
     document.head.appendChild(link);
   }
-  link.setAttribute('href', url);
+  link.setAttribute('href', href);
 }
 
 function updateJsonLd(id: string, data: object) {
@@ -31,53 +31,82 @@ function updateJsonLd(id: string, data: object) {
   script.textContent = JSON.stringify(data, null, 2);
 }
 
+function normalizeDateToIso(dateStr?: string): string {
+  if (!dateStr) return new Date().toISOString();
+  try {
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  } catch {
+    // fallback
+  }
+  return new Date().toISOString();
+}
+
 /**
- * Super SEO for an Individual Blog Post
- * Optimized specifically so that when someone Googles either the post title OR the author's name,
- * Google immediately indexes and ranks the author and article!
+ * Enhanced Google News, Google Images & Google Discover SEO for an Individual Blog Post
+ * Formats Schema.org NewsArticle & BlogPosting with complete ImageObject metadata.
  */
 export function setSingleBlogSeo(post: BlogPost) {
-  const origin = window.location.origin || 'https://www.tanakagaadzikwa.com';
-  const canonicalUrl = `${origin}/blogs#${post.slug || post.id}`;
+  const origin = typeof window !== 'undefined' && window.location.origin 
+    ? window.location.origin 
+    : 'https://www.tanakagaadzikwa.com';
+    
+  const blogIdentifier = post.slug || post.id;
+  const canonicalUrl = `${origin}/blogs#${blogIdentifier}`;
+  const directUrl = `${origin}/blogs/${blogIdentifier}`;
   const authorUrl = `${origin}/blogs?author=${encodeURIComponent(post.author)}`;
   
-  // Clean excerpt for meta description (Google snippet optimal length: 140-160 chars)
+  // Clean excerpt for Google search snippets (140-160 chars)
   const cleanExcerpt = post.excerpt 
-    ? post.excerpt.slice(0, 150).replace(/\s+/g, ' ').trim() 
-    : post.body.slice(0, 150).replace(/\s+/g, ' ').trim();
+    ? post.excerpt.slice(0, 160).replace(/\s+/g, ' ').trim() 
+    : post.body.slice(0, 160).replace(/\s+/g, ' ').trim();
 
-  // Author-first high-ranking Google title format
   const pageTitle = `${post.title} by ${post.author} | Tanaka Gaadzikwa`;
-  const metaDescription = `Read "${post.title}" by ${post.author} in ${post.category}. ${cleanExcerpt}`;
+  const metaDescription = `Read "${post.title}" by ${post.author} in ${post.category || 'Technology'}. ${cleanExcerpt}`;
+  const isoPublishedDate = normalizeDateToIso(post.publishedDate);
 
-  // 1. Google Page Title & Dynamic Meta
+  // 1. Core Document Meta Tags
   document.title = pageTitle;
   updateMetaTag('name', 'description', metaDescription);
   updateMetaTag('name', 'author', post.author);
   
-  // Author-focused keywords so queries like "{Author Name} blogs" or "{Author Name} {Category}" rank #1
-  const authorKeywords = `${post.author}, ${post.author} blogs, ${post.author} articles, ${post.author} portfolio, ${post.category}, ${post.title}, Tanaka Gaadzikwa, startup blog, tech Zimbabwe, software engineering`;
-  updateMetaTag('name', 'keywords', authorKeywords);
-  updateCanonicalUrl(canonicalUrl);
+  // Googlebot & Google News Directives for Maximum Image and Rich Snippet Visibility
+  updateMetaTag('name', 'robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+  updateMetaTag('name', 'googlebot', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+  updateMetaTag('name', 'googlebot-news', 'index, follow');
+  
+  // Google News Keywords & Article Tags
+  const keywords = `${post.author}, ${post.author} blogs, ${post.category}, ${post.title}, Tanaka Gaadzikwa, tech news Zimbabwe, AI builder, startup stories, software engineering`;
+  updateMetaTag('name', 'keywords', keywords);
+  updateMetaTag('name', 'news_keywords', `${post.category}, ${post.author}, Tanaka Gaadzikwa, Technology, Startups, Zimbabwe`);
 
-  // 2. OpenGraph Meta Tags (Facebook, LinkedIn, Discord, Slack, iMessage)
+  updateLinkTag('canonical', directUrl);
+
+  // 2. OpenGraph Meta Tags (with High-Res Image Tags for Google Images & Socials)
   updateMetaTag('property', 'og:type', 'article');
   updateMetaTag('property', 'og:title', `${post.title} – by ${post.author}`);
   updateMetaTag('property', 'og:description', metaDescription);
-  updateMetaTag('property', 'og:url', canonicalUrl);
-  updateMetaTag('property', 'og:site_name', 'Tanaka Gaadzikwa Blogs');
-  
-  if (post.imageUrl) {
-    updateMetaTag('property', 'og:image', post.imageUrl);
-    updateMetaTag('property', 'og:image:secure_url', post.imageUrl);
-    updateMetaTag('property', 'og:image:alt', `${post.title} - Cover photo by ${post.author}`);
-    updateMetaTag('property', 'og:image:type', 'image/jpeg');
-  }
+  updateMetaTag('property', 'og:url', directUrl);
+  updateMetaTag('property', 'og:site_name', 'Tanaka Gaadzikwa Blogs & News');
 
-  updateMetaTag('property', 'article:published_time', post.publishedDate);
+  const coverImageUrl = post.imageUrl || 'https://i.ibb.co/pvvN63sV/20260526-181511.webp';
+  
+  updateMetaTag('property', 'og:image', coverImageUrl);
+  updateMetaTag('property', 'og:image:secure_url', coverImageUrl);
+  updateMetaTag('property', 'og:image:width', '1200');
+  updateMetaTag('property', 'og:image:height', '675');
+  updateMetaTag('property', 'og:image:type', 'image/jpeg');
+  updateMetaTag('property', 'og:image:alt', `${post.title} - Cover image by ${post.author}`);
+  updateLinkTag('image_src', coverImageUrl);
+
+  // Article Publishing Times for Google News
+  updateMetaTag('property', 'article:published_time', isoPublishedDate);
+  updateMetaTag('property', 'article:modified_time', isoPublishedDate);
   updateMetaTag('property', 'article:author', post.author);
-  updateMetaTag('property', 'article:section', post.category);
-  updateMetaTag('property', 'article:tag', post.category);
+  updateMetaTag('property', 'article:section', post.category || 'Technology');
+  updateMetaTag('property', 'article:tag', post.category || 'General');
 
   // 3. Twitter / X Card Tags
   updateMetaTag('name', 'twitter:card', 'summary_large_image');
@@ -85,74 +114,109 @@ export function setSingleBlogSeo(post: BlogPost) {
   updateMetaTag('name', 'twitter:creator', post.author);
   updateMetaTag('name', 'twitter:title', `${post.title} – by ${post.author}`);
   updateMetaTag('name', 'twitter:description', metaDescription);
-  if (post.imageUrl) {
-    updateMetaTag('name', 'twitter:image', post.imageUrl);
-    updateMetaTag('name', 'twitter:image:alt', post.title);
-  }
+  updateMetaTag('name', 'twitter:image', coverImageUrl);
+  updateMetaTag('name', 'twitter:image:alt', post.title);
 
-  // 4. Schema.org JSON-LD Structured Data: Author Entity & BlogPosting
-  const schemaData = {
+  // 4. Schema.org JSON-LD Structured Data: NewsArticle + BlogPosting + ImageObject
+  const newsArticleSchema = {
     '@context': 'https://schema.org',
-    '@type': 'BlogPosting',
-    '@id': `${canonicalUrl}#article`,
+    '@type': ['NewsArticle', 'BlogPosting'],
+    '@id': `${directUrl}#article`,
     'mainEntityOfPage': {
       '@type': 'WebPage',
-      '@id': canonicalUrl
+      '@id': directUrl
     },
-    'headline': post.title,
+    'headline': post.title.slice(0, 110),
     'description': metaDescription,
-    'image': post.imageUrl ? [post.imageUrl] : ['https://i.ibb.co/pvvN63sV/20260526-181511.webp'],
-    'datePublished': post.publishedDate,
-    'dateModified': post.publishedDate,
+    'image': [
+      {
+        '@type': 'ImageObject',
+        'url': coverImageUrl,
+        'contentUrl': coverImageUrl,
+        'width': 1200,
+        'height': 675,
+        'caption': post.title,
+        'representativeOfPage': true,
+        'creditText': post.author,
+        'copyrightNotice': `© ${new Date().getFullYear()} Tanaka Gaadzikwa Blogs. Author: ${post.author}`,
+        'license': 'https://www.tanakagaadzikwa.com/terms',
+        'acquireLicensePage': 'https://www.tanakagaadzikwa.com/terms'
+      },
+      coverImageUrl
+    ],
+    'datePublished': isoPublishedDate,
+    'dateModified': isoPublishedDate,
     'inLanguage': 'en-US',
-    // Comprehensive Author Schema so Google recognizes the person and associates their profile
+    'isAccessibleForFree': 'True',
+    'speakable': {
+      '@type': 'SpeakableSpecification',
+      'cssSelector': ['h1', 'article']
+    },
     'author': {
       '@type': 'Person',
       '@id': `${authorUrl}#author`,
       'name': post.author,
-      'image': post.authorAvatar || undefined,
+      'image': post.authorAvatar ? {
+        '@type': 'ImageObject',
+        'url': post.authorAvatar,
+        'caption': post.author
+      } : undefined,
       'url': authorUrl,
-      'jobTitle': 'Author & Creator',
-      'knowsAbout': [post.category, 'Technology', 'Software Development']
+      'jobTitle': 'Author & Contributor',
+      'description': post.authorBio || `Author and creator publishing on Tanaka Gaadzikwa Blogs`,
+      'worksFor': {
+        '@type': 'Organization',
+        'name': 'Tanaka Gaadzikwa Blogs',
+        'url': 'https://www.tanakagaadzikwa.com/'
+      },
+      'knowsAbout': [post.category || 'Technology', 'Artificial Intelligence', 'Software Development', 'Entrepreneurship']
     },
     'publisher': {
-      '@type': 'Person',
-      'name': 'Tanaka Gaadzikwa',
+      '@type': 'NewsMediaOrganization',
+      '@id': 'https://www.tanakagaadzikwa.com/#organization',
+      'name': 'Tanaka Gaadzikwa News & Blogs',
       'url': 'https://www.tanakagaadzikwa.com/',
       'logo': {
         '@type': 'ImageObject',
-        'url': 'https://i.ibb.co/pvvN63sV/20260526-181511.webp'
-      }
+        'url': 'https://www.tanakagaadzikwa.com/favicon-512x512.png',
+        'width': 512,
+        'height': 512
+      },
+      'publishingPrinciples': 'https://www.tanakagaadzikwa.com/terms'
     },
-    // Category Recognition
-    'articleSection': post.category,
+    'articleSection': post.category || 'Technology',
     'about': {
       '@type': 'Thing',
-      'name': post.category
+      'name': post.category || 'Technology'
     },
-    'genre': post.category,
+    'genre': post.category || 'Technology',
     'wordCount': post.body.trim().split(/\s+/).length,
     'articleBody': post.body
   };
 
-  updateJsonLd('dynamic-blog-seo-ldjson', schemaData);
+  updateJsonLd('dynamic-blog-seo-ldjson', newsArticleSchema);
 }
 
 /**
- * Super SEO for Author Profile View
- * When someone filters blogs by an author or navigates to their author view
+ * Author Profile SEO
+ * High-ranking Google Person Profile markup for any registered writer.
  */
 export function setAuthorPageSeo(authorName: string, authorAvatar?: string, blogsCount: number = 0) {
-  const origin = window.location.origin || 'https://www.tanakagaadzikwa.com';
+  const origin = typeof window !== 'undefined' && window.location.origin 
+    ? window.location.origin 
+    : 'https://www.tanakagaadzikwa.com';
+    
   const canonicalUrl = `${origin}/blogs?author=${encodeURIComponent(authorName)}`;
-  const title = `${authorName} – Blogs, Articles & Profile | Tanaka Gaadzikwa`;
-  const description = `Read all ${blogsCount} blogs and articles published by ${authorName} on the Tanaka Gaadzikwa open platform.`;
+  const title = `${authorName} – Author Profile & Published Stories | Tanaka Gaadzikwa`;
+  const description = `Read all ${blogsCount} articles and stories published by ${authorName} on the Tanaka Gaadzikwa open platform.`;
 
   document.title = title;
   updateMetaTag('name', 'description', description);
   updateMetaTag('name', 'author', authorName);
-  updateMetaTag('name', 'keywords', `${authorName}, ${authorName} blogs, ${authorName} author, ${authorName} profile, Tanaka Gaadzikwa`);
-  updateCanonicalUrl(canonicalUrl);
+  updateMetaTag('name', 'keywords', `${authorName}, ${authorName} blogs, ${authorName} author, ${authorName} profile, Tanaka Gaadzikwa, tech writing`);
+  updateMetaTag('name', 'robots', 'index, follow, max-image-preview:large');
+  updateMetaTag('name', 'googlebot', 'index, follow, max-image-preview:large');
+  updateLinkTag('canonical', canonicalUrl);
 
   updateMetaTag('property', 'og:type', 'profile');
   updateMetaTag('property', 'og:title', title);
@@ -160,6 +224,7 @@ export function setAuthorPageSeo(authorName: string, authorAvatar?: string, blog
   updateMetaTag('property', 'og:url', canonicalUrl);
   if (authorAvatar) {
     updateMetaTag('property', 'og:image', authorAvatar);
+    updateLinkTag('image_src', authorAvatar);
   }
 
   updateMetaTag('name', 'twitter:card', 'summary');
@@ -175,7 +240,11 @@ export function setAuthorPageSeo(authorName: string, authorAvatar?: string, blog
     'mainEntity': {
       '@type': 'Person',
       'name': authorName,
-      'image': authorAvatar || undefined,
+      'image': authorAvatar ? {
+        '@type': 'ImageObject',
+        'url': authorAvatar,
+        'caption': authorName
+      } : undefined,
       'url': canonicalUrl,
       'description': `Author with ${blogsCount} published articles on Tanaka Gaadzikwa open platform.`
     }
@@ -185,25 +254,34 @@ export function setAuthorPageSeo(authorName: string, authorAvatar?: string, blog
 }
 
 /**
- * Super SEO for the Blogs Hub Directory
+ * Blogs Hub & Directory SEO
  */
 export function setBlogsHubSeo(blogsCount: number) {
-  const origin = window.location.origin || 'https://www.tanakagaadzikwa.com';
+  const origin = typeof window !== 'undefined' && window.location.origin 
+    ? window.location.origin 
+    : 'https://www.tanakagaadzikwa.com';
+    
   const canonicalUrl = `${origin}/blogs`;
-  const title = 'Blogs & Open Community | Tanaka Gaadzikwa – Tech, AI & Startups';
-  const description = 'Read and publish software development, AI, entrepreneurship, and startup stories on TanakaGaadzikwa.com. Open builder platform from Harare, Zimbabwe.';
+  const title = 'Blogs & News | Tanaka Gaadzikwa – Tech, AI & Startups';
+  const description = `Explore stories, insights, and perspectives from Tanaka Gaadzikwa and independent builders. Software engineering, artificial intelligence, and startup essays.`;
 
   document.title = title;
   updateMetaTag('name', 'description', description);
-  updateMetaTag('name', 'keywords', 'Tanaka Gaadzikwa, Tanaka Gaadzikwa blogs, tech blogs Zimbabwe, African startups, AI builder Harare, LINKUP, open publishing');
-  updateCanonicalUrl(canonicalUrl);
+  updateMetaTag('name', 'keywords', 'Tanaka Gaadzikwa, Tanaka Gaadzikwa blogs, tech blogs Zimbabwe, African startups, AI builder Harare, LINKUP, open publishing, Google News tech');
+  updateMetaTag('name', 'robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+  updateMetaTag('name', 'googlebot', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+  updateMetaTag('name', 'googlebot-news', 'index, follow');
+  updateLinkTag('canonical', canonicalUrl);
 
   updateMetaTag('property', 'og:type', 'website');
   updateMetaTag('property', 'og:title', title);
   updateMetaTag('property', 'og:description', description);
   updateMetaTag('property', 'og:url', canonicalUrl);
-  updateMetaTag('property', 'og:site_name', 'Tanaka Gaadzikwa');
+  updateMetaTag('property', 'og:site_name', 'Tanaka Gaadzikwa Blogs & News');
   updateMetaTag('property', 'og:image', 'https://i.ibb.co/pvvN63sV/20260526-181511.webp');
+  updateMetaTag('property', 'og:image:width', '1200');
+  updateMetaTag('property', 'og:image:height', '675');
+  updateLinkTag('image_src', 'https://i.ibb.co/pvvN63sV/20260526-181511.webp');
 
   updateMetaTag('name', 'twitter:card', 'summary_large_image');
   updateMetaTag('name', 'twitter:site', '@TGaadzikwa');
@@ -215,14 +293,19 @@ export function setBlogsHubSeo(blogsCount: number) {
     '@context': 'https://schema.org',
     '@type': 'Blog',
     '@id': 'https://www.tanakagaadzikwa.com/blogs#blog',
-    'name': 'Tanaka Gaadzikwa Blogs & Community Log',
+    'name': 'Tanaka Gaadzikwa Blogs & News Hub',
     'url': 'https://www.tanakagaadzikwa.com/blogs',
     'description': description,
     'publisher': {
-      '@type': 'Person',
-      'name': 'Tanaka Gaadzikwa',
-      'jobTitle': 'Founder & CEO of LINKUP, The Minister of AI, Startup Cupid',
-      'url': 'https://www.tanakagaadzikwa.com/'
+      '@type': 'NewsMediaOrganization',
+      'name': 'Tanaka Gaadzikwa Blogs & News',
+      'url': 'https://www.tanakagaadzikwa.com/',
+      'logo': {
+        '@type': 'ImageObject',
+        'url': 'https://www.tanakagaadzikwa.com/favicon-512x512.png',
+        'width': 512,
+        'height': 512
+      }
     }
   };
 
@@ -232,7 +315,7 @@ export function setBlogsHubSeo(blogsCount: number) {
 export function resetHomeSeo() {
   document.title = 'Tanaka Gaadzikwa | Young Entrepreneur, Startup Cupid & Minister of AI';
   updateMetaTag('name', 'description', "Tanaka Gaadzikwa is a Young entrepreneur, tech founder & CEO of LINKUP from Harare, Zimbabwe. Widely known as the 'Startup Cupid' and 'The Minister of AI'.");
-  updateCanonicalUrl('https://www.tanakagaadzikwa.com/');
+  updateLinkTag('canonical', 'https://www.tanakagaadzikwa.com/');
   updateMetaTag('property', 'og:type', 'profile');
   updateMetaTag('property', 'og:title', 'Tanaka Gaadzikwa | Young Entrepreneur, Startup Cupid & Minister of AI');
   updateMetaTag('property', 'og:image', 'https://i.ibb.co/pvvN63sV/20260526-181511.webp');

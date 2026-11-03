@@ -146,15 +146,17 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
       </header>
 
       {/* Full-Screen Content Area */}
-      <main className="flex-1 w-full max-w-4xl mx-auto px-6 sm:px-8 py-8 sm:py-12 space-y-8">
+      <main itemScope itemType="https://schema.org/NewsArticle" className="flex-1 w-full max-w-4xl mx-auto px-6 sm:px-8 py-8 sm:py-12 space-y-8">
         
         {/* Cover Photo - Full Bleed Banner */}
         {post.imageUrl && (
-          <div className="w-full aspect-[21/9] rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200 shadow-sm">
+          <div className="w-full aspect-[21/9] rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200 shadow-sm relative">
             <img 
               src={post.imageUrl} 
               alt={`${post.title} - Cover Photo by ${post.author}`}
               itemProp="image"
+              loading="eager"
+              decoding="async"
               className="w-full h-full object-cover"
             />
           </div>
@@ -163,11 +165,11 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
         {/* Header Metadata */}
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
+            <span itemProp="articleSection" className="px-3 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
               {post.category || 'General'}
             </span>
             <span>·</span>
-            <span className="flex items-center gap-1.5 font-mono">
+            <span itemProp="datePublished" className="flex items-center gap-1.5 font-mono">
               <Calendar className="w-3.5 h-3.5 text-zinc-400" />
               {post.publishedDate}
             </span>
@@ -178,7 +180,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
             </span>
           </div>
 
-          <h1 className="font-serif text-3xl sm:text-5xl font-semibold text-zinc-900 leading-tight tracking-tight">
+          <h1 itemProp="headline" className="font-serif text-3xl sm:text-5xl font-semibold text-zinc-900 leading-tight tracking-tight">
             {post.title}
           </h1>
         </div>
@@ -221,7 +223,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
                 </p>
               ) : (
                 <p className="text-xs text-zinc-500">
-                  Published author on TanakaGaadzikwa.com · Indexed Super SEO Profile
+                  Published author on TanakaGaadzikwa.com · Indexed Author Profile
                 </p>
               )}
             </div>
@@ -239,7 +241,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
         </div>
 
         {/* Article Body with Full Formatting & Bold Letters */}
-        <article className="pt-2 space-y-6 text-zinc-900 text-base sm:text-xl leading-relaxed font-sans">
+        <article itemProp="articleBody" className="pt-2 space-y-6 text-zinc-900 text-base sm:text-xl leading-relaxed font-sans">
           {renderFormattedBody(post.body)}
         </article>
 
@@ -250,7 +252,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
               Have something to share?
             </h3>
             <p className="text-xs sm:text-sm text-zinc-300 max-w-md mx-auto leading-relaxed">
-              Create an account with your photo, name, and bio to publish your blogs and get indexed on Google Super SEO.
+              Create an account with your photo, name, and bio to publish your blogs and get indexed on Google &amp; Google News.
             </p>
             <div className="pt-2">
               <button
