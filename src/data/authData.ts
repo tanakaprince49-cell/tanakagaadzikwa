@@ -1,4 +1,7 @@
 import { UserProfile } from '../types';
+import { auth, db, googleProvider, logOut } from '../lib/firebase';
+import { signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const REGISTERED_USERS_KEY = 'tg_registered_users_v2';
 const CURRENT_USER_KEY = 'tg_current_user_v2';
@@ -26,6 +29,104 @@ export function getRegisteredUsers(): StoredAccount[] {
   } catch {
     return [];
   }
+}
+
+// Convert a Firebase User into our UserProfile format
+export async function syncFirebaseUserToProfile(fbUser: User, customBio?: string): Promise<UserProfile> {
+  const displayName = fbUser.displayName || 'Google User';
+  const parts = displayName.trim().split(/\s+/);
+  const name = parts[0] || 'User';
+  const surname = parts.slice(1).join(' ') || '';
+  const email = fbUser.email || '';
+  const avatarUrl = fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
+
+  let bio = customBio || '';
+
+  // Attempt to fetch existing profile from Firestore to preserve custom bio if already set
+  try {
+    const userDocRef = doc(db, 'users', fbUser.uid);
+    const snap = await getDoc(userDocRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      if (!customBio && data.bio) {
+        bio = data.bio;
+      }
+    } else {
+      // Save profile to Firestore
+      await setDoc(userDocRef, {
+        uid: fbUser.uid,
+        name,
+        surname,
+        email,
+        avatarUrl,
+        bio: bio || '',
+        createdAt: new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    console.warn('Firestore profile sync warning:', err);
+  }
+
+  const profile: UserProfile = {
+    id: fbUser.uid,
+    name,
+    surname,
+    email,
+    avatarUrl,
+    bio,
+    createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+  };
+
+  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(profile));
+  window.dispatchEvent(new CustomEvent('tg_auth_changed', { detail: profile }));
+  return profile;
+}
+
+// Sign in with Google using Firebase Auth
+export async function signInWithGoogleAuth(): Promise<{ user?: UserProfile; error?: string }> {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const profile = await syncFirebaseUserToProfile(result.user);
+    return { user: profile };
+  } catch (err: unknown) {
+    console.error('Google Sign-In failed:', err);
+    const msg = err instanceof Error ? err.message : 'Google sign-in failed. Please try again.';
+    return { error: msg };
+  }
+}
+
+// Update author profile bio and persist to Firestore
+export async function updateUserBio(bio: string): Promise<UserProfile | null> {
+  const current = getCurrentUser();
+  if (!current) return null;
+
+  const updated: UserProfile = { ...current, bio: bio.trim() };
+  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
+
+  if (auth.currentUser) {
+    try {
+      const userDocRef = doc(db, 'users', auth.currentUser.uid);
+      await setDoc(userDocRef, { bio: bio.trim() }, { merge: true });
+    } catch (e) {
+      console.warn('Failed to update bio in Firestore:', e);
+    }
+  }
+
+  window.dispatchEvent(new CustomEvent('tg_auth_changed', { detail: updated }));
+  return updated;
+}
+
+// Listen to Firebase Auth state changes
+if (typeof window !== 'undefined') {
+  onAuthStateChanged(auth, async (fbUser) => {
+    if (fbUser) {
+      try {
+        await syncFirebaseUserToProfile(fbUser);
+      } catch (e) {
+        console.warn('Auth state sync error:', e);
+      }
+    }
+  });
 }
 
 export function signUp(data: {
@@ -79,7 +180,7 @@ export function signUp(data: {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, surname, email, password, avatarUrl, bio }),
-  }).catch((e) => console.warn('Auth server sync warning:', e));
+  }).catch(() => {});
 
   window.dispatchEvent(new CustomEvent('tg_auth_changed', { detail: userProfile }));
   return { user: userProfile };
@@ -97,7 +198,7 @@ export function signIn(emailInput: string, passwordInput: string): { user?: User
   const matched = users.find((u) => u.email === email);
 
   if (!matched) {
-    return { error: 'No account found with this email. Please create an account.' };
+    return { error: 'No account found with this email. Please sign in with Google or create an account.' };
   }
 
   if (matched.passwordHash !== password) {
@@ -127,7 +228,12 @@ export function signIn(emailInput: string, passwordInput: string): { user?: User
   return { user: userProfile };
 }
 
-export function signOut(): void {
+export async function signOut(): Promise<void> {
+  try {
+    await logOut();
+  } catch (e) {
+    console.warn('Firebase signout warning:', e);
+  }
   localStorage.removeItem(CURRENT_USER_KEY);
   window.dispatchEvent(new CustomEvent('tg_auth_changed', { detail: null }));
 }

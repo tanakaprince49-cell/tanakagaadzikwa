@@ -185,10 +185,10 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
     setSelectedPost(newPost);
   };
 
-  const handleDeleteBlog = (e: React.MouseEvent, id: string) => {
+  const handleDeleteBlog = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete your blog post?')) {
-      deleteCommunityBlog(id);
+      await deleteCommunityBlog(id);
       setBlogs(getStoredBlogs());
       if (selectedPost?.id === id) {
         setSelectedPost(null);
@@ -491,6 +491,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
             {filteredBlogs.map((blog) => {
               const currentFullName = currentUser ? `${currentUser.name} ${currentUser.surname}`.trim() : '';
               const isOwner = blog.isCommunityPost && (
+                (currentUser && blog.authorUid && currentUser.id === blog.authorUid) ||
                 (currentUser && currentUser.email === blog.authorEmail) ||
                 (currentUser && currentFullName.toLowerCase() === blog.author.toLowerCase()) ||
                 !blog.authorEmail

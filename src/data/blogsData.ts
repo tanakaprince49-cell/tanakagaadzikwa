@@ -1,4 +1,15 @@
 import { BlogPost } from '../types';
+import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  updateDoc, 
+  onSnapshot, 
+  getDocs,
+  serverTimestamp 
+} from 'firebase/firestore';
 
 export const PRESET_COVER_IMAGES = [
   {
@@ -30,38 +41,114 @@ export function calculateReadTime(text: string): string {
   return `${minutes} min read`;
 }
 
-// Fetch from API and sync to local storage
-let isFetchingServerBlogs = false;
+// Memory cache
+let inMemoryBlogs: BlogPost[] = [];
+
+// Initialize real-time sync with Firestore
+if (typeof window !== 'undefined') {
+  try {
+    const blogsCol = collection(db, 'blogs');
+    onSnapshot(
+      blogsCol,
+      (snapshot) => {
+        const firestoreBlogs: BlogPost[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          firestoreBlogs.push({
+            id: docSnap.id,
+            slug: data.slug || docSnap.id,
+            title: data.title || 'Untitled',
+            excerpt: data.excerpt || '',
+            body: data.body || '',
+            imageUrl: data.imageUrl || PRESET_COVER_IMAGES[0].url,
+            author: data.author || 'Anonymous Author',
+            authorSurname: data.authorSurname,
+            authorRole: data.authorRole,
+            authorAvatar: data.authorAvatar,
+            authorEmail: data.authorEmail,
+            authorBio: data.authorBio,
+            authorUid: data.authorUid,
+            category: data.category || 'General',
+            publishedDate: data.publishedDate || 'Recently',
+            readTime: data.readTime || '2 min read',
+            likes: typeof data.likes === 'number' ? data.likes : 0,
+            tags: Array.isArray(data.tags) ? data.tags : [],
+            isCommunityPost: true,
+          });
+        });
+
+        // Sort by creation / ID desc (newest first)
+        firestoreBlogs.sort((a, b) => {
+          return b.id.localeCompare(a.id);
+        });
+
+        inMemoryBlogs = firestoreBlogs;
+        try {
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(firestoreBlogs));
+        } catch {
+          // Ignore quota errors on local storage
+        }
+
+        window.dispatchEvent(new CustomEvent('tg_blogs_updated', { detail: firestoreBlogs }));
+      },
+      (error) => {
+        console.warn('Firestore onSnapshot error, falling back to local/cached blogs:', error.message);
+        handleFirestoreError(error, OperationType.GET, 'blogs');
+      }
+    );
+  } catch (err) {
+    console.error('Failed to attach Firestore snapshot listener:', err);
+  }
+}
 
 export async function fetchServerBlogs(): Promise<BlogPost[]> {
-  if (isFetchingServerBlogs) return getStoredBlogs();
-  isFetchingServerBlogs = true;
   try {
-    const res = await fetch('/api/blogs');
-    if (res.ok) {
-      const serverBlogs: BlogPost[] = await res.json();
-      if (Array.isArray(serverBlogs)) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(serverBlogs));
-        window.dispatchEvent(new CustomEvent('tg_blogs_updated'));
-        isFetchingServerBlogs = false;
-        return serverBlogs;
-      }
+    const blogsCol = collection(db, 'blogs');
+    const snapshot = await getDocs(blogsCol);
+    const firestoreBlogs: BlogPost[] = [];
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      firestoreBlogs.push({
+        id: docSnap.id,
+        slug: data.slug || docSnap.id,
+        title: data.title || 'Untitled',
+        excerpt: data.excerpt || '',
+        body: data.body || '',
+        imageUrl: data.imageUrl || PRESET_COVER_IMAGES[0].url,
+        author: data.author || 'Anonymous Author',
+        authorSurname: data.authorSurname,
+        authorRole: data.authorRole,
+        authorAvatar: data.authorAvatar,
+        authorEmail: data.authorEmail,
+        authorBio: data.authorBio,
+        authorUid: data.authorUid,
+        category: data.category || 'General',
+        publishedDate: data.publishedDate || 'Recently',
+        readTime: data.readTime || '2 min read',
+        likes: typeof data.likes === 'number' ? data.likes : 0,
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        isCommunityPost: true,
+      });
+    });
+
+    if (firestoreBlogs.length > 0) {
+      firestoreBlogs.sort((a, b) => b.id.localeCompare(a.id));
+      inMemoryBlogs = firestoreBlogs;
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(firestoreBlogs));
+      return firestoreBlogs;
     }
   } catch (err) {
-    console.warn('Server fetch not available or failed, using cached storage', err);
+    console.warn('Firestore fetch failed, checking cache:', err);
   }
-  isFetchingServerBlogs = false;
+
   return getStoredBlogs();
 }
 
-// Trigger initial server sync once loaded
-if (typeof window !== 'undefined') {
-  setTimeout(() => {
-    fetchServerBlogs();
-  }, 100);
-}
-
 export function getStoredBlogs(): BlogPost[] {
+  if (inMemoryBlogs.length > 0) {
+    return inMemoryBlogs;
+  }
+
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     const userBlogs: BlogPost[] = raw ? JSON.parse(raw) : [];
@@ -81,7 +168,7 @@ export function getStoredBlogs(): BlogPost[] {
   }
 }
 
-export function saveNewBlog(input: {
+export async function saveNewBlog(input: {
   title: string;
   excerpt?: string;
   body: string;
@@ -92,20 +179,22 @@ export function saveNewBlog(input: {
   authorAvatar?: string;
   authorEmail?: string;
   authorBio?: string;
+  authorUid?: string;
   category?: string;
   readTime?: string;
   tags?: string[];
-}): BlogPost {
+}): Promise<BlogPost> {
   const title = input.title.trim();
   const body = input.body.trim();
   const author = input.author?.trim() || 'Anonymous Author';
   const authorRole = input.authorRole?.trim();
   const authorAvatar = input.authorAvatar?.trim();
-  const authorEmail = input.authorEmail?.trim();
+  const authorEmail = input.authorEmail?.trim() || auth.currentUser?.email || undefined;
   const authorBio = input.authorBio?.trim();
+  const authorUid = input.authorUid?.trim() || auth.currentUser?.uid || undefined;
   const category = input.category?.trim() || 'General';
   const imageUrl = input.imageUrl?.trim() || PRESET_COVER_IMAGES[0].url;
-  
+
   const excerpt = input.excerpt?.trim() || (body.slice(0, 160) + (body.length > 160 ? '...' : ''));
   const id = `post-${Date.now()}`;
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || id;
@@ -128,6 +217,7 @@ export function saveNewBlog(input: {
     authorAvatar,
     authorEmail,
     authorBio,
+    authorUid,
     category,
     publishedDate,
     readTime,
@@ -136,34 +226,56 @@ export function saveNewBlog(input: {
     isCommunityPost: true,
   };
 
+  // Optimistic local update
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     const existing: BlogPost[] = raw ? JSON.parse(raw) : [];
     const updated = [newPost, ...existing];
-
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-    } catch (storageErr) {
-      console.warn('LocalStorage full, trimming older cached posts:', storageErr);
-      try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated.slice(0, 15)));
-      } catch {
-        // Ignore local storage error if full, server API sync handles persistence
-      }
-    }
-
+    inMemoryBlogs = updated;
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent('tg_blogs_updated', { detail: newPost }));
-
-    // Async sync to server API
-    fetch('/api/blogs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newPost),
-    }).catch((e) => console.warn('Server blog sync error:', e));
-
   } catch (err) {
-    console.error('Failed to save blog to storage', err);
+    console.warn('Local storage cache update warning:', err);
   }
+
+  // Persist directly to Firestore
+  try {
+    const blogDocRef = doc(db, 'blogs', id);
+    const firestoreData: Record<string, unknown> = {
+      id: newPost.id,
+      slug: newPost.slug,
+      title: newPost.title,
+      excerpt: newPost.excerpt,
+      body: newPost.body,
+      imageUrl: newPost.imageUrl,
+      author: newPost.author,
+      category: newPost.category,
+      publishedDate: newPost.publishedDate,
+      readTime: newPost.readTime,
+      likes: 0,
+      tags: newPost.tags || [],
+      createdAt: serverTimestamp(),
+    };
+
+    if (newPost.authorSurname) firestoreData.authorSurname = newPost.authorSurname;
+    if (newPost.authorRole) firestoreData.authorRole = newPost.authorRole;
+    if (newPost.authorAvatar) firestoreData.authorAvatar = newPost.authorAvatar;
+    if (newPost.authorEmail) firestoreData.authorEmail = newPost.authorEmail;
+    if (newPost.authorBio) firestoreData.authorBio = newPost.authorBio;
+    if (newPost.authorUid) firestoreData.authorUid = newPost.authorUid;
+
+    await setDoc(blogDocRef, firestoreData);
+  } catch (firestoreErr) {
+    console.error('Failed to save blog to Firestore:', firestoreErr);
+    handleFirestoreError(firestoreErr, OperationType.CREATE, `blogs/${id}`);
+  }
+
+  // Also sync to server route as resilient secondary backup
+  fetch('/api/blogs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newPost),
+  }).catch(() => {});
 
   return newPost;
 }
@@ -202,13 +314,25 @@ export function toggleLikeBlog(id: string): { likes: number; hasLiked: boolean }
     }
     localStorage.setItem(LIKES_STORAGE_KEY, JSON.stringify(likesMap));
 
-    // Update in local array
+    // Update in memory & local storage
     const blogs = getStoredBlogs();
     const target = blogs.find((b) => b.id === id);
+    const nextLikes = target ? Math.max(0, (target.likes || 0) + delta) : 0;
     if (target) {
-      target.likes = Math.max(0, (target.likes || 0) + delta);
+      target.likes = nextLikes;
+      inMemoryBlogs = blogs;
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(blogs));
       window.dispatchEvent(new CustomEvent('tg_blogs_updated'));
+    }
+
+    // Update in Firestore
+    try {
+      const blogDocRef = doc(db, 'blogs', id);
+      updateDoc(blogDocRef, { likes: nextLikes }).catch((err) => {
+        console.warn('Firestore update like warning:', err);
+      });
+    } catch (err) {
+      console.warn('Firestore update like error:', err);
     }
 
     // Sync to server
@@ -218,21 +342,32 @@ export function toggleLikeBlog(id: string): { likes: number; hasLiked: boolean }
       body: JSON.stringify({ increment: delta }),
     }).catch(() => {});
 
-    return { likes: target?.likes || 0, hasLiked: !currentlyLiked };
+    return { likes: nextLikes, hasLiked: !currentlyLiked };
   } catch (err) {
     console.error('Failed to toggle like', err);
     return { likes: 0, hasLiked: false };
   }
 }
 
-export function deleteCommunityBlog(id: string): boolean {
+export async function deleteCommunityBlog(id: string): Promise<boolean> {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) return false;
-    const existing: BlogPost[] = JSON.parse(raw);
-    const updated = existing.filter((post) => post.id !== id);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new CustomEvent('tg_blogs_updated'));
+    if (raw) {
+      const existing: BlogPost[] = JSON.parse(raw);
+      const updated = existing.filter((post) => post.id !== id);
+      inMemoryBlogs = updated;
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('tg_blogs_updated'));
+    }
+
+    // Delete from Firestore
+    try {
+      const blogDocRef = doc(db, 'blogs', id);
+      await deleteDoc(blogDocRef);
+    } catch (firestoreErr) {
+      console.error('Failed to delete blog from Firestore:', firestoreErr);
+      handleFirestoreError(firestoreErr, OperationType.DELETE, `blogs/${id}`);
+    }
 
     // Sync to server API
     fetch(`/api/blogs/${id}`, {

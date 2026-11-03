@@ -224,7 +224,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
     }, 10);
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setErrorMessage(null);
 
@@ -264,7 +264,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
       const authorFullName = `${currentUser.name || 'Author'} ${currentUser.surname || ''}`.trim();
       const finalReadTime = customReadTime.trim() || calculateReadTime(body);
 
-      const created = saveNewBlog({
+      const created = await saveNewBlog({
         title,
         body,
         imageUrl: finalImageUrl,
@@ -273,6 +273,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
         authorAvatar: currentUser.avatarUrl || '',
         authorEmail: currentUser.email || '',
         authorBio: currentUser.bio || '',
+        authorUid: currentUser.id,
         category: finalCategory,
         readTime: finalReadTime,
       });

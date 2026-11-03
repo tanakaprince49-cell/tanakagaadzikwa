@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Blogs collection
+    match /blogs/{blogId} {
+      // Anyone can read blog posts for public discovery and SEO
+      allow read: if true;
+      
+      // Authenticated users can publish blog posts
+      allow create: if isSignedIn();
+
+      // Authors can update their post or any user can toggle like count
+      allow update: if (
+        isSignedIn() && (
+          resource.data.authorUid == request.auth.uid || 
+          resource.data.authorEmail == request.auth.token.email
+        )
+      ) || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+      );
+
+      // Author can delete their own blog post
+      allow delete: if isSignedIn() && (
+        resource.data.authorUid == request.auth.uid || 
+        resource.data.authorEmail == request.auth.token.email
+      );
+    }
+
+    // Users collection for profile persistence
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Default safety catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

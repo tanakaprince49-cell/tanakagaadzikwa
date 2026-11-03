@@ -1,0 +1,53 @@
+{
+  "entities": {
+    "blog": {
+      "title": "Blog Post",
+      "description": "A published blog article",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "slug": { "type": "string" },
+        "title": { "type": "string", "maxLength": 300 },
+        "excerpt": { "type": "string", "maxLength": 1000 },
+        "body": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "author": { "type": "string", "maxLength": 120 },
+        "authorSurname": { "type": "string", "maxLength": 120 },
+        "authorRole": { "type": "string", "maxLength": 120 },
+        "authorAvatar": { "type": "string" },
+        "authorEmail": { "type": "string" },
+        "authorBio": { "type": "string", "maxLength": 1000 },
+        "authorUid": { "type": "string" },
+        "category": { "type": "string", "maxLength": 100 },
+        "publishedDate": { "type": "string" },
+        "readTime": { "type": "string", "maxLength": 50 },
+        "likes": { "type": "number" },
+        "tags": { "type": "array" }
+      },
+      "required": ["id", "title", "body", "author", "category"]
+    },
+    "user": {
+      "title": "User Profile",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "bio": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    }
+  },
+  "firestore": {
+    "/blogs/{blogId}": {
+      "schema": "blog",
+      "description": "Collection of blog posts readable by all and writable by authenticated authors"
+    },
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "User profiles readable by all and writable by owner"
+    }
+  }
+}

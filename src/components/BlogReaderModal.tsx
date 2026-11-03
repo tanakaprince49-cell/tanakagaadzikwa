@@ -58,9 +58,9 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete your blog post?')) {
-      deleteCommunityBlog(post.id);
+      await deleteCommunityBlog(post.id);
       if (onPostDeleted) onPostDeleted(post.id);
       onClose();
     }
@@ -68,6 +68,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
 
   const currentFullName = currentUser ? `${currentUser.name} ${currentUser.surname}`.trim() : '';
   const canDelete = post.isCommunityPost && (
+    (currentUser && post.authorUid && currentUser.id === post.authorUid) ||
     (currentUser && currentUser.email === post.authorEmail) ||
     (currentUser && currentFullName.toLowerCase() === post.author.toLowerCase()) ||
     !post.authorEmail

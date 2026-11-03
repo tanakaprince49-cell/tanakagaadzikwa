@@ -61,8 +61,8 @@ export default function App() {
         )}
       </main>
 
-      {/* Minimalist Luxury Footer */}
-      <Footer />
+      {/* Minimalist Luxury Footer - hidden on blogs page */}
+      {!isBlogsRoute && <Footer />}
 
       {/* Vercel Tracking & Insights */}
       {isMounted && (

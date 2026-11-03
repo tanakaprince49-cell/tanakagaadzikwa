@@ -60,6 +60,7 @@ export interface BlogPost {
   authorAvatar?: string;
   authorEmail?: string;
   authorBio?: string;
+  authorUid?: string;
   category: string;
   publishedDate: string;
   readTime: string;
