@@ -312,16 +312,6 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
           <p className="text-xs sm:text-sm md:text-base text-zinc-600 max-w-lg mx-auto leading-relaxed px-2">
             Publish stories, custom categories, and personal perspectives. Articles and author profiles are structured for rapid indexing on Google and Google News.
           </p>
-
-          <div className="pt-1.5">
-            <button
-              onClick={handleOpenWrite}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-900 hover:bg-black text-white transition-all text-xs font-semibold uppercase tracking-wider cursor-pointer shadow-sm active:scale-95"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Write a Story</span>
-            </button>
-          </div>
         </div>
       </section>
 

@@ -258,10 +258,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToBlogs }) => {
                 className="liquid-glass rounded-3xl p-8 border border-sky-500/30 hover:border-sky-400 transition-all cursor-pointer shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 group"
               >
                 <div className="space-y-2 text-center sm:text-left">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 text-sky-400 text-xs font-mono">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Open Community Publishing &amp; Google News Indexing</span>
-                  </div>
                   <h3 className="font-serif text-2xl sm:text-3xl text-white font-normal">
                     Blogs &amp; Perspectives Hub
                   </h3>
