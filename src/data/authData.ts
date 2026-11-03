@@ -35,24 +35,26 @@ export function getRegisteredUsers(): StoredAccount[] {
 export async function syncFirebaseUserToProfile(fbUser: User, customBio?: string): Promise<UserProfile> {
   const displayName = fbUser.displayName || 'Google User';
   const parts = displayName.trim().split(/\s+/);
-  const name = parts[0] || 'User';
-  const surname = parts.slice(1).join(' ') || '';
+  let name = parts[0] || 'User';
+  let surname = parts.slice(1).join(' ') || '';
   const email = fbUser.email || '';
-  const avatarUrl = fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
-
+  let avatarUrl = fbUser.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`;
   let bio = customBio || '';
+  let password = '';
 
-  // Attempt to fetch existing profile from Firestore to preserve custom bio if already set
+  // Attempt to fetch existing profile from Firestore to preserve custom author attributes
   try {
     const userDocRef = doc(db, 'users', fbUser.uid);
     const snap = await getDoc(userDocRef);
     if (snap.exists()) {
       const data = snap.data();
-      if (!customBio && data.bio) {
-        bio = data.bio;
-      }
+      if (data.name) name = data.name;
+      if (data.surname !== undefined) surname = data.surname;
+      if (data.avatarUrl) avatarUrl = data.avatarUrl;
+      if (data.bio) bio = data.bio;
+      if (data.password) password = data.password;
     } else {
-      // Save profile to Firestore
+      // Save initial profile to Firestore
       await setDoc(userDocRef, {
         uid: fbUser.uid,
         name,
@@ -60,6 +62,7 @@ export async function syncFirebaseUserToProfile(fbUser: User, customBio?: string
         email,
         avatarUrl,
         bio: bio || '',
+        password: '',
         createdAt: new Date().toISOString(),
       });
     }
@@ -74,6 +77,7 @@ export async function syncFirebaseUserToProfile(fbUser: User, customBio?: string
     email,
     avatarUrl,
     bio,
+    password: password || undefined,
     createdAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
   };
 
@@ -141,6 +145,53 @@ export async function updateUserBio(bio: string): Promise<UserProfile | null> {
       await setDoc(userDocRef, { bio: bio.trim() }, { merge: true });
     } catch (e) {
       console.warn('Failed to update bio in Firestore:', e);
+    }
+  }
+
+  window.dispatchEvent(new CustomEvent('tg_auth_changed', { detail: updated }));
+  return updated;
+}
+
+// Update complete author profile (name, surname, bio, password, avatarUrl)
+export async function updateFullUserProfile(data: {
+  name: string;
+  surname: string;
+  bio: string;
+  avatarUrl: string;
+  password?: string;
+}): Promise<UserProfile | null> {
+  const current = getCurrentUser();
+  if (!current) return null;
+
+  const updated: UserProfile = {
+    ...current,
+    name: data.name.trim() || current.name,
+    surname: data.surname.trim(),
+    bio: data.bio.trim(),
+    avatarUrl: data.avatarUrl.trim() || current.avatarUrl,
+    password: data.password !== undefined ? data.password.trim() : current.password,
+  };
+
+  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updated));
+
+  if (auth.currentUser) {
+    try {
+      const userDocRef = doc(db, 'users', auth.currentUser.uid);
+      await setDoc(
+        userDocRef,
+        {
+          uid: auth.currentUser.uid,
+          name: updated.name,
+          surname: updated.surname,
+          bio: updated.bio || '',
+          avatarUrl: updated.avatarUrl,
+          password: updated.password || '',
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+    } catch (e) {
+      console.warn('Failed to update full profile in Firestore:', e);
     }
   }
 
