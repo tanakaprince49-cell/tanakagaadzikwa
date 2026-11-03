@@ -198,58 +198,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToBlogs }) => {
         />
       )}
 
-      {/* 2. PERSISTENT HEADLINE SWITCHER BAR */}
-      <nav className="sticky top-0 z-30 w-full bg-[#0B1120]/95 backdrop-blur-md border-b border-[#1E293B]/80 px-4 sm:px-8 py-3 shadow-lg shadow-[#060A17]/60">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          
-          <button
-            onClick={() => selectHeadline('overview')}
-            className="flex items-center gap-2 font-serif text-[11px] sm:text-xs tracking-[0.2em] uppercase text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0"
-          >
-            <span className="text-white font-semibold">TANAKA</span>
-            <span className="text-sky-400 hidden sm:inline">GAADZIKWA</span>
-          </button>
-
-          {/* Headline Tabs */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1">
-            <button
-              onClick={() => selectHeadline('overview')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-serif tracking-wider uppercase transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                activeHeadline === 'overview'
-                  ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-              }`}
-            >
-              Overview
-            </button>
-
-            {sectionsList.map((sec) => (
-              <button
-                key={sec.id}
-                onClick={() => selectHeadline(sec.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-serif tracking-wider uppercase transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                  activeHeadline === sec.id
-                    ? 'bg-white text-zinc-950 font-semibold shadow-xs'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-                }`}
-              >
-                {sec.label}
-              </button>
-            ))}
-
-            {onNavigateToBlogs && (
-              <button
-                onClick={onNavigateToBlogs}
-                className="px-3 py-1.5 rounded-xl text-xs font-serif tracking-wider uppercase text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 transition-all cursor-pointer shrink-0 whitespace-nowrap border border-sky-500/30 flex items-center gap-1"
-              >
-                <span>Blogs</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-
-        </div>
-      </nav>
 
       {/* 3. OVERVIEW CHAPTER CARDS (When on Overview) */}
       {activeHeadline === 'overview' && (
