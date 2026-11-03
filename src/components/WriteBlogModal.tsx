@@ -586,35 +586,6 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                           Uploads are automatically compressed for high performance
                         </p>
                       </div>
-
-                      {/* Quick Cover Presets */}
-                      <div className="p-3 bg-zinc-50 rounded-2xl border border-zinc-200/80 space-y-2">
-                        <div className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wider flex items-center gap-1.5">
-                          <Sparkles className="w-3 h-3 text-zinc-500" />
-                          <span>Or pick a ready-to-use cover</span>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                          {PRESET_COVER_IMAGES.map((preset) => (
-                            <button
-                              key={preset.label}
-                              type="button"
-                              onClick={() => setImageUrl(preset.url)}
-                              className="group relative rounded-xl overflow-hidden aspect-[16/10] border border-zinc-200 hover:border-zinc-900 transition-all cursor-pointer text-left"
-                            >
-                              <img 
-                                src={preset.url} 
-                                alt={preset.label} 
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                              />
-                              <div className="absolute inset-0 bg-black/40 flex items-end p-1.5">
-                                <span className="text-[10px] font-medium text-white line-clamp-1">
-                                  {preset.label}
-                                </span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   )}
                 </div>
