@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { ChevronsDown } from 'lucide-react';
-import { GooglePlayLogo } from './PlatformLogos';
 
 interface HeroProps {
   onScrollDown: () => void;
@@ -132,21 +131,10 @@ export const Hero: React.FC<HeroProps> = ({
         <div className="flex items-center gap-3 sm:gap-4 shrink-0">
           <button
             onClick={() => onNavigate('contact')}
-            className="font-serif text-[11px] sm:text-xs tracking-[0.3em] text-white/80 hover:text-white transition-colors uppercase whitespace-nowrap shrink-0 cursor-pointer hidden md:block"
+            className="font-serif text-[11px] sm:text-xs tracking-[0.3em] text-white/80 hover:text-white transition-colors uppercase whitespace-nowrap shrink-0 cursor-pointer"
           >
             Connect
           </button>
-          
-          <a
-            href="https://play.google.com/store/apps/details?id=com.tana.linkup"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white text-black hover:bg-white/90 transition-all shadow-sm cursor-pointer"
-            title="Download LINKUP on Google Play"
-            aria-label="Download LINKUP on Google Play"
-          >
-            <GooglePlayLogo className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-          </a>
         </div>
       </div>
 
