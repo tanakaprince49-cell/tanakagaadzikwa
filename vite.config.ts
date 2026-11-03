@@ -12,6 +12,9 @@ export default defineConfig(() => {
       },
     },
     server: {
+      host: true,
+      // Allow sandboxed preview hosts (e.g. *.e2b.app) to reach the dev server
+      allowedHosts: true as const,
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',

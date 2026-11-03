@@ -7,23 +7,17 @@ import {
   Edit3, 
   AlertCircle,
   Clock,
-  Bold,
-  Italic,
-  Heading2,
-  Quote,
-  List,
   Lock,
   Sparkles,
-  Link as LinkIcon,
   Crop,
-  Code,
-  Strikethrough,
   ArrowLeft
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
 import { saveNewBlog, calculateReadTime, PRESET_COVER_IMAGES } from '../data/blogsData';
 import { compressImageFile } from '../utils/imageCompressor';
 import { ImageCropperModal } from './ImageCropperModal';
+import { RichTextEditor } from './RichTextEditor';
+import { countWords, looksLikeHtml, normalizeBodyHtml, sanitizeHtml, stripHtml } from '../utils/richText';
 
 interface WriteBlogModalProps {
   isOpen: boolean;
@@ -125,6 +119,16 @@ export const renderInlineFormatting = (text: string) => {
 export const renderFormattedBody = (bodyText: string) => {
   if (!bodyText) return null;
 
+  // Bodies written with the rich-text editor are stored as safe HTML
+  if (looksLikeHtml(bodyText)) {
+    return (
+      <div
+        className="blog-rich-body"
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(normalizeBodyHtml(bodyText)) }}
+      />
+    );
+  }
+
   const blocks = bodyText
     .split(/\n\s*\n/)
     .map((paragraph, idx) => {
@@ -187,6 +191,8 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [customCategoryInput, setCustomCategoryInput] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  // The untouched upload - every crop is re-done from this so quality never degrades
+  const [originalImageUrl, setOriginalImageUrl] = useState('');
   const [body, setBody] = useState('');
   const [customReadTime, setCustomReadTime] = useState('');
   
@@ -197,7 +203,6 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
   const [isCropperOpen, setIsCropperOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const formScrollRef = useRef<HTMLFormElement>(null);
 
   // Reset form only when modal opens fresh
@@ -214,6 +219,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
     setIsCustomCategory(false);
     setCustomCategoryInput('');
     setImageUrl('');
+    setOriginalImageUrl('');
     setBody('');
     setCustomReadTime('');
     setErrorMessage(null);
@@ -236,6 +242,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
       // Auto-scale & compress client-side via canvas
       const compressedUrl = await compressImageFile(file, 1400, 0.88);
       if (compressedUrl) {
+        setOriginalImageUrl(compressedUrl);
         setImageUrl(compressedUrl);
         setIsCropperOpen(true); // Automatically open cropper modal for user alignment
       } else {
@@ -267,60 +274,6 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
     }
   };
 
-  const insertFormatting = (prefix: string, suffix: string = '') => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = body.substring(start, end);
-    const replacement = `${prefix}${selectedText || 'text'}${suffix}`;
-
-    const newBody = body.substring(0, start) + replacement + body.substring(end);
-    setBody(newBody);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + prefix.length, start + replacement.length - suffix.length);
-    }, 10);
-  };
-
-  const handleInsertLink = () => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = body.substring(start, end) || 'link text';
-
-    const url = window.prompt('Enter website link URL (e.g. https://google.com):', 'https://');
-    if (!url || !url.trim() || url === 'https://') return;
-
-    const cleanUrl = url.trim();
-    const markdownLink = `[${selectedText}](${cleanUrl})`;
-
-    const newBody = body.substring(0, start) + markdownLink + body.substring(end);
-    setBody(newBody);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start, start + markdownLink.length);
-    }, 10);
-  };
-
-  const handleKeyDownTextarea = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      handleInsertLink();
-    } else if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-      e.preventDefault();
-      insertFormatting('**', '**');
-    } else if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
-      e.preventDefault();
-      insertFormatting('*', '*');
-    }
-  };
-
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setErrorMessage(null);
@@ -345,7 +298,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
       return;
     }
 
-    if (!body.trim() || body.trim().length < 15) {
+    if (!stripHtml(body).trim() || stripHtml(body).trim().length < 15) {
       setErrorMessage('Please write the body of the blog (at least 15 characters).');
       setActiveTab('write');
       if (formScrollRef.current) formScrollRef.current.scrollTop = 0;
@@ -361,9 +314,10 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
       const authorFullName = `${currentUser.name || 'Author'} ${currentUser.surname || ''}`.trim();
       const finalReadTime = customReadTime.trim() || calculateReadTime(body);
 
+      const cleanBody = normalizeBodyHtml(body);
       const created = await saveNewBlog({
         title,
-        body,
+        body: cleanBody,
         imageUrl: finalImageUrl,
         author: authorFullName,
         authorSurname: currentUser.surname || '',
@@ -386,7 +340,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
     }
   };
 
-  const wordCount = body.trim() ? body.trim().split(/\s+/).length : 0;
+  const wordCount = countWords(body);
   const estimatedRead = customReadTime.trim() || calculateReadTime(body);
   const activeCategory = (isCustomCategory ? customCategoryInput.trim() : category) || 'General';
 
@@ -672,7 +626,7 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                         <img 
                           src={imageUrl} 
                           alt="Cover Preview" 
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover object-center"
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 p-3">
                           <button
@@ -721,14 +675,14 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                             {isUploadingImage ? 'Compressing photo...' : 'Click to upload photo or drag & drop'}
                           </p>
                           <p className="text-[11px] text-zinc-500 mt-0.5">
-                            Upload your photo then zoom &amp; crop to perfect 16:9 banner size
+                            Upload your photo then zoom, pan &amp; crop it yourself to a perfect 16:9 banner
                           </p>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Body Textarea with Markdown & Hyperlink Toolbar */}
+                  {/* Rich text body editor */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold uppercase tracking-wider text-zinc-700">
@@ -744,93 +698,22 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Formatting Toolbar */}
-                    <div className="flex flex-wrap items-center gap-1 p-1.5 bg-zinc-100 border border-zinc-200 rounded-t-xl text-zinc-700">
-                      <button
-                        type="button"
-                        onClick={() => insertFormatting('**', '**')}
-                        className="p-1.5 rounded bg-white hover:bg-zinc-200 text-zinc-900 font-bold flex items-center gap-1 text-xs border border-zinc-200 transition-colors cursor-pointer"
-                        title="Bold text (**text** or Ctrl+B)"
-                      >
-                        <Bold className="w-3.5 h-3.5" />
-                        <span>Bold</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => insertFormatting('*', '*')}
-                        className="p-1.5 rounded hover:bg-white text-zinc-700 hover:text-zinc-900 transition-colors cursor-pointer"
-                        title="Italic (*text* or Ctrl+I)"
-                      >
-                        <Italic className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleInsertLink}
-                        className="p-1.5 rounded bg-sky-50 hover:bg-sky-100 text-sky-700 font-medium flex items-center gap-1.5 text-xs border border-sky-200 transition-colors cursor-pointer"
-                        title="Highlight text and click to add website link (or Ctrl+K)"
-                      >
-                        <LinkIcon className="w-3.5 h-3.5 text-sky-600" />
-                        <span className="font-semibold">Insert Link</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => insertFormatting('### ', '')}
-                        className="p-1.5 rounded hover:bg-white text-zinc-700 hover:text-zinc-900 transition-colors cursor-pointer"
-                        title="Subheading (### Heading)"
-                      >
-                        <Heading2 className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => insertFormatting('> ', '')}
-                        className="p-1.5 rounded hover:bg-white text-zinc-700 hover:text-zinc-900 transition-colors cursor-pointer"
-                        title="Quote (> Quote)"
-                      >
-                        <Quote className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => insertFormatting('- ', '')}
-                        className="p-1.5 rounded hover:bg-white text-zinc-700 hover:text-zinc-900 transition-colors cursor-pointer"
-                        title="Bullet List (- Item)"
-                      >
-                        <List className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => insertFormatting('~', '~')}
-                        className="p-1.5 rounded hover:bg-white text-zinc-700 hover:text-zinc-900 transition-colors cursor-pointer"
-                        title="Strikethrough (~text~)"
-                      >
-                        <Strikethrough className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => insertFormatting('`', '`')}
-                        className="p-1.5 rounded hover:bg-white text-zinc-700 hover:text-zinc-900 transition-colors cursor-pointer"
-                        title="Inline Code (`code`)"
-                      >
-                        <Code className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <textarea
-                      ref={textareaRef}
+                    <RichTextEditor
                       value={body}
-                      onChange={(e) => setBody(e.target.value)}
-                      onKeyDown={handleKeyDownTextarea}
-                      rows={10}
-                      placeholder="Write the body of your blog here... Highlight any word and click 'Insert Link' to turn it into a hyperlinked text."
-                      className="w-full px-3.5 sm:px-4 py-3 sm:py-3.5 text-sm sm:text-base bg-zinc-50 border border-t-0 border-zinc-200 rounded-b-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-zinc-900 focus:bg-white leading-relaxed font-sans resize-y"
-                      required
+                      onChange={setBody}
+                      minHeight={280}
+                      placeholder="Write the body of your blog here. Highlight any words and press Ctrl+B to bold them, or Ctrl+K / the Link button to turn them into a hyperlink."
                     />
+
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                      <span className="font-semibold text-zinc-700">Formatting:</span> highlight text then use the toolbar —{' '}
+                      <kbd className="px-1 py-0.5 bg-zinc-100 border border-zinc-300 rounded text-[10px] font-mono">Ctrl</kbd>+
+                      <kbd className="px-1 py-0.5 bg-zinc-100 border border-zinc-300 rounded text-[10px] font-mono">B</kbd> bold,{' '}
+                      <kbd className="px-1 py-0.5 bg-zinc-100 border border-zinc-300 rounded text-[10px] font-mono">Ctrl</kbd>+
+                      <kbd className="px-1 py-0.5 bg-zinc-100 border border-zinc-300 rounded text-[10px] font-mono">I</kbd> italic,{' '}
+                      <kbd className="px-1 py-0.5 bg-zinc-100 border border-zinc-300 rounded text-[10px] font-mono">Ctrl</kbd>+
+                      <kbd className="px-1 py-0.5 bg-zinc-100 border border-zinc-300 rounded text-[10px] font-mono">K</kbd> link.
+                    </p>
                   </div>
 
                 </div>
@@ -943,13 +826,14 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
       </div>
 
       {/* Interactive Photo Cropper Modal */}
-      {imageUrl && (
+      {(originalImageUrl || imageUrl) && (
         <ImageCropperModal
           isOpen={isCropperOpen}
-          imageUrl={imageUrl}
+          imageUrl={originalImageUrl || imageUrl}
           onClose={() => setIsCropperOpen(false)}
           onCropComplete={(croppedUrl) => {
             setImageUrl(croppedUrl);
+            setIsCropperOpen(false);
           }}
         />
       )}

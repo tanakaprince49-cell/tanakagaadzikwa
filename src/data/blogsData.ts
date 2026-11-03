@@ -1,4 +1,5 @@
 import { BlogPost } from '../types';
+import { countWords, toPlainText } from '../utils/richText';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { 
   collection, 
@@ -36,7 +37,7 @@ const LOCAL_STORAGE_KEY = 'tg_user_written_blogs_v2';
 const LIKES_STORAGE_KEY = 'tg_blog_liked_ids_v2';
 
 export function calculateReadTime(text: string): string {
-  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const words = countWords(text);
   const minutes = Math.max(1, Math.ceil(words / 200));
   return `${minutes} min read`;
 }
@@ -195,7 +196,8 @@ export async function saveNewBlog(input: {
   const category = input.category?.trim() || 'General';
   const imageUrl = input.imageUrl?.trim() || PRESET_COVER_IMAGES[0].url;
 
-  const excerpt = input.excerpt?.trim() || (body.slice(0, 160) + (body.length > 160 ? '...' : ''));
+  const plainBody = toPlainText(body);
+  const excerpt = input.excerpt?.trim() || (plainBody.slice(0, 160) + (plainBody.length > 160 ? '...' : ''));
   const id = `post-${Date.now()}`;
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || id;
 

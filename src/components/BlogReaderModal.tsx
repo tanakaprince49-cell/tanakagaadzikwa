@@ -150,7 +150,7 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
         
         {/* Cover Photo - Full Bleed Banner */}
         {post.imageUrl && (
-          <div className="w-full aspect-[21/9] rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200 shadow-sm relative">
+          <div className="w-full aspect-[16/9] rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200 shadow-sm relative">
             <img 
               src={post.imageUrl} 
               alt={`${post.title} - Cover Photo by ${post.author}`}

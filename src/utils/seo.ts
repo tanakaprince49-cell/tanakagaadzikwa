@@ -1,4 +1,5 @@
 import { BlogPost } from '../types';
+import { countWords, toPlainText } from './richText';
 
 function updateMetaTag(attributeName: string, attributeValue: string, content: string) {
   let element = document.querySelector(`meta[${attributeName}="${attributeValue}"]`);
@@ -61,7 +62,7 @@ export function setSingleBlogSeo(post: BlogPost) {
   // Clean excerpt for Google search snippets (140-160 chars)
   const cleanExcerpt = post.excerpt 
     ? post.excerpt.slice(0, 160).replace(/\s+/g, ' ').trim() 
-    : post.body.slice(0, 160).replace(/\s+/g, ' ').trim();
+    : toPlainText(post.body, 160);
 
   const pageTitle = `${post.title} by ${post.author} | Tanaka Gaadzikwa`;
   const metaDescription = `Read "${post.title}" by ${post.author} in ${post.category || 'Technology'}. ${cleanExcerpt}`;
@@ -190,8 +191,8 @@ export function setSingleBlogSeo(post: BlogPost) {
       'name': post.category || 'Technology'
     },
     'genre': post.category || 'Technology',
-    'wordCount': post.body.trim().split(/\s+/).length,
-    'articleBody': post.body
+    'wordCount': countWords(post.body),
+    'articleBody': toPlainText(post.body)
   };
 
   updateJsonLd('dynamic-blog-seo-ldjson', newsArticleSchema);

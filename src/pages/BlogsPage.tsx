@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { toPlainText } from '../utils/richText';
 import { 
   Search, 
   Edit3, 
@@ -156,7 +157,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchTitle = blog.title.toLowerCase().includes(q);
-        const matchBody = blog.body.toLowerCase().includes(q);
+        const matchBody = toPlainText(blog.body).toLowerCase().includes(q);
         const matchAuthor = blog.author.toLowerCase().includes(q);
         const matchCategory = (blog.category || '').toLowerCase().includes(q);
         return matchTitle || matchBody || matchAuthor || matchCategory;
