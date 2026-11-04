@@ -188,6 +188,46 @@ for (let i = 0; i < cards; i += 1) {
 
 await browser.close();
 
-const generatedAt = new Date().toISOString();
-fs.writeFileSync(outFile, `${JSON.stringify({ generatedAt, source: startUrl, posts }, null, 2)}\n`, 'utf8');
-console.log(`[snapshot] wrote ${posts.length} stories to ${path.relative(rootDir, outFile)}`);
+if (posts.length === 0) {
+  console.error('[snapshot] captured 0 stories - keeping the existing snapshot untouched.');
+  process.exit(1);
+}
+
+// Prune cover/avatar files that no longer belong to any story. Only safe when
+// every captured story has its picture, otherwise a partial capture would delete
+// images that are still referenced by the committed snapshot.
+try {
+  const complete = posts.every((post) => post.imageUrl);
+  if (!complete) throw new Error('incomplete capture - skipping prune');
+  const keep = new Set(
+    posts
+      .flatMap((post) => [post.imageUrl, post.authorAvatar])
+      .filter((url) => url && url.startsWith('/blogs/'))
+      .map((url) => path.basename(url))
+  );
+  for (const file of fs.existsSync(publicBlogDir) ? fs.readdirSync(publicBlogDir) : []) {
+    if (!keep.has(file)) fs.rmSync(path.join(publicBlogDir, file), { force: true });
+  }
+} catch {
+  // pruning is best-effort
+}
+
+// Compare only the stories themselves: an unchanged set must produce a
+// byte-identical file, so the CI job can skip committing and avoid pointless
+// deployments.
+let existing = null;
+try {
+  existing = fs.existsSync(outFile) ? JSON.parse(fs.readFileSync(outFile, 'utf8')) : null;
+} catch {
+  existing = null;
+}
+
+const unchanged = existing && JSON.stringify(existing.posts) === JSON.stringify(posts);
+
+if (unchanged) {
+  console.log('[snapshot] no story changes - snapshot already up to date.');
+} else {
+  const payload = { generatedAt: new Date().toISOString(), source: startUrl, posts };
+  fs.writeFileSync(outFile, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  console.log(`[snapshot] wrote ${posts.length} stories to ${path.relative(rootDir, outFile)}`);
+}

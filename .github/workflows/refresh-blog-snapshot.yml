@@ -1,0 +1,73 @@
+# Keeps the static blog pages in sync with Firestore, automatically.
+#
+# Stories are created from the browser, so the build has no way to read them at
+# build time (Firestore blocks server-side reads). This workflow runs on a
+# schedule, opens the live site in a real browser, captures every published
+# story into src/data/blogSnapshot.json (+ public/blogs/ cover files), verifies
+# the build, and pushes the change. That push triggers the normal deploy, so each
+# new story gets its own indexable /blogs/<slug> page and sitemap/news entries
+# with no manual step.
+
+name: Refresh blog snapshot
+
+on:
+  schedule:
+    # Every 30 minutes. GitHub may delay scheduled runs when busy.
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: 'Blog hub URL to snapshot'
+        required: false
+        default: 'https://www.tanakagaadzikwa.com/blogs'
+
+# Needed so the job can push the refreshed snapshot back to main.
+permissions:
+  contents: write
+
+# Never run two snapshots at once.
+concurrency:
+  group: blog-snapshot
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      - name: Capture published stories from the live site
+        run: node scripts/snapshot-blogs.mjs --url "${{ github.event.inputs.site_url || 'https://www.tanakagaadzikwa.com/blogs' }}"
+
+      - name: Verify the build (prerender + sitemaps)
+        run: npm run build
+
+      - name: Commit and push when stories changed
+        run: |
+          git config user.name "blog-snapshot-bot"
+          git config user.email "blog-snapshot-bot@users.noreply.github.com"
+          git add src/data/blogSnapshot.json public/blogs
+          if git diff --cached --quiet; then
+            echo "No story changes - nothing to publish."
+            exit 0
+          fi
+          STORIES=$(node -e "console.log(require('./src/data/blogSnapshot.json').posts.length)")
+          git commit -m "chore(blogs): refresh story snapshot (${STORIES} stories)"
+          git push
