@@ -3,8 +3,30 @@
   "trailingSlash": false,
   "rewrites": [
     {
+      "source": "/sitemap-blogs.xml",
+      "destination": "/api/blogs-sitemap"
+    },
+    {
+      "source": "/sitemap-news.xml",
+      "destination": "/api/news-sitemap"
+    },
+    {
+      "source": "/blogs/:slug",
+      "destination": "/api/post?slug=:slug"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sitemap.xml",
+      "headers": [{ "key": "Content-Type", "value": "application/xml; charset=utf-8" }]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [{ "key": "Content-Type", "value": "text/plain; charset=utf-8" }]
     }
   ]
 }

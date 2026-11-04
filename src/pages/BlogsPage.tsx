@@ -12,13 +12,18 @@ import {
   X,
   Sparkles,
   Tag,
-  Trash2
+  Trash2,
+  Eye,
+  MousePointerClick,
+  BarChart3
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
 import { getStoredBlogs, fetchServerBlogs, deleteCommunityBlog } from '../data/blogsData';
+import { fetchStatsForPosts, formatCount, PostStats } from '../data/statsData';
 import { getCurrentUser, signOut } from '../data/authData';
 import { WriteBlogModal } from '../components/WriteBlogModal';
 import { BlogReaderModal } from '../components/BlogReaderModal';
+import { BlogStatsPanel } from '../components/BlogStatsPanel';
 import { AuthModal } from '../components/AuthModal';
 import { setBlogsHubSeo, setSingleBlogSeo, setAuthorPageSeo } from '../utils/seo';
 
@@ -55,6 +60,8 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'profile'>('signin');
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [statsMap, setStatsMap] = useState<Record<string, PostStats>>({});
 
   // Sync on blog creation / updates
   useEffect(() => {
@@ -65,6 +72,43 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
     fetchServerBlogs().then((data) => setBlogs(data));
     return () => window.removeEventListener('tg_blogs_updated', handleUpdate);
   }, []);
+
+  // Load view/click stats for the signed-in author's own stories
+  useEffect(() => {
+    if (!currentUser) {
+      setStatsMap({});
+      return;
+    }
+    const fullName = `${currentUser.name || ''} ${currentUser.surname || ''}`.trim().toLowerCase();
+    const myIds = blogs
+      .filter(
+        (b) =>
+          (b.authorUid && currentUser.id && b.authorUid === currentUser.id) ||
+          (b.authorEmail && currentUser.email && b.authorEmail.toLowerCase() === currentUser.email.toLowerCase()) ||
+          b.author?.toLowerCase() === fullName
+      )
+      .map((b) => b.id);
+
+    let cancelled = false;
+    if (!myIds.length) {
+      setStatsMap({});
+      return;
+    }
+    fetchStatsForPosts(myIds).then((result) => {
+      if (!cancelled) setStatsMap(result);
+    });
+
+    const handler = () => {
+      fetchStatsForPosts(myIds).then((result) => {
+        if (!cancelled) setStatsMap(result);
+      });
+    };
+    window.addEventListener('tg_blog_stats_updated', handler);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('tg_blog_stats_updated', handler);
+    };
+  }, [blogs, currentUser]);
 
   // Sync auth state
   useEffect(() => {
@@ -80,10 +124,16 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       setSelectedAuthor(params.get('author'));
-      
+
+      const path = window.location.pathname.toLowerCase();
+      const pathSlug = path.startsWith('/blogs/')
+        ? decodeURIComponent(window.location.pathname.replace(/^\/blogs\//i, ''))
+        : null;
       const hash = window.location.hash.replace('#', '');
-      if (hash) {
-        const match = blogs.find((b) => b.slug === hash || b.id === hash);
+      const target = pathSlug || hash;
+
+      if (target) {
+        const match = blogs.find((b) => b.slug === target || b.id === target);
         if (match) setSelectedPost(match);
       } else {
         setSelectedPost(null);
@@ -136,7 +186,7 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
       count: authorBlogs.length,
       posts: authorBlogs.map((blog) => ({
         title: blog.title,
-        url: `https://www.tanakagaadzikwa.com/blogs#${blog.slug || blog.id}`,
+        url: `https://www.tanakagaadzikwa.com/blogs/${blog.slug || blog.id}`,
         datePublished: blog.publishedDate,
       })),
       topics: Array.from(new Set(authorBlogs.map((b) => b.category).filter(Boolean))) as string[],
@@ -197,9 +247,37 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
     }
   };
 
+  // Every story has its own crawlable URL (/blogs/<slug>) - the serverless
+  // function in api/post.js renders those pages for crawlers, and the client
+  // keeps the address bar in sync so shares and canonicals always match.
+  const storyPath = (post: BlogPost) => `/blogs/${post.slug || post.id}`;
+
+  const openStory = (post: BlogPost) => {
+    setSelectedPost(post);
+    try {
+      if (window.location.pathname !== storyPath(post)) {
+        window.history.pushState({ story: post.slug || post.id }, '', storyPath(post));
+      }
+    } catch {
+      // Ignore
+    }
+  };
+
+  const closeStory = () => {
+    setSelectedPost(null);
+    try {
+      const path = window.location.pathname.toLowerCase();
+      if (path.startsWith('/blogs/') || window.location.hash) {
+        window.history.pushState(null, '', '/blogs' + window.location.search);
+      }
+    } catch {
+      // Ignore
+    }
+  };
+
   const handlePostCreated = (newPost: BlogPost) => {
     setBlogs(getStoredBlogs());
-    setSelectedPost(newPost);
+    openStory(newPost);
   };
 
   const handleDeleteBlog = async (e: React.MouseEvent, id: string) => {
@@ -304,6 +382,17 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                 </svg>
                 <span className="hidden sm:inline">Sign In with Google</span>
                 <span className="sm:hidden">Sign In</span>
+              </button>
+            )}
+
+            {currentUser && blogs.some((b) => b.isCommunityPost) && (
+              <button
+                onClick={() => setIsStatsOpen(true)}
+                className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold text-zinc-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                title="See views and clicks for your stories"
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="hidden sm:inline">My Stats</span>
               </button>
             )}
 
@@ -543,15 +632,26 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                   key={blog.id}
                   itemScope
                   itemType="https://schema.org/NewsArticle"
-                  onClick={() => setSelectedPost(blog)}
+                  onClick={() => openStory(blog)}
                   className="bg-white border border-zinc-200 hover:border-zinc-400 rounded-2xl overflow-hidden transition-all duration-300 flex flex-col justify-between cursor-pointer group shadow-sm hover:shadow-md relative"
                 >
                   {blog.imageUrl && (
                     <div className="aspect-[16/9] w-full overflow-hidden bg-zinc-100 relative">
-                      <img 
-                        src={blog.imageUrl} 
-                        alt={`${blog.title} - Cover photo by ${blog.author}`}
+                      <img
+                        src={blog.imageVariants?.standard || blog.imageUrl}
+                        srcSet={
+                          [
+                            blog.imageVariants?.standard ? `${blog.imageVariants.standard} 900w` : null,
+                            blog.imageVariants?.wide ? `${blog.imageVariants.wide} 1600w` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(', ') || undefined
+                        }
+                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 420px"
+                        alt={`${blog.title} - ${blog.category || 'Story'} cover photo by ${blog.author}`}
                         itemProp="image"
+                        width={1600}
+                        height={900}
                         loading="lazy"
                         decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -579,6 +679,19 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                         <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
                           <Clock className="w-3 h-3 text-zinc-400" />
                           <span>{blog.readTime}</span>
+                          {isOwner && statsMap[blog.id] && (
+                            <>
+                              <span className="text-zinc-300">·</span>
+                              <span className="flex items-center gap-0.5 text-sky-700" title="Views">
+                                <Eye className="w-3 h-3" />
+                                {formatCount(statsMap[blog.id].views)}
+                              </span>
+                              <span className="flex items-center gap-0.5 text-emerald-700" title="Clicks">
+                                <MousePointerClick className="w-3 h-3" />
+                                {formatCount(statsMap[blog.id].clicks)}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -603,8 +716,22 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
                         )}
                       </div>
 
-                      <h3 itemProp="headline" className="font-serif text-xl font-medium text-zinc-900 group-hover:text-black transition-colors leading-snug">
-                        {blog.title}
+                      <h3 className="font-serif text-xl font-medium text-zinc-900 group-hover:text-black transition-colors leading-snug">
+                        {/* Real crawlable link: Google follows these hrefs to the
+                            per-story URLs (/blogs/<slug>) without needing JS clicks. */}
+                        <a
+                          href={storyPath(blog)}
+                          itemProp="url"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openStory(blog);
+                          }}
+                          className="text-inherit no-underline hover:no-underline"
+                          title={`Read ${blog.title}`}
+                        >
+                          <span itemProp="headline">{blog.title}</span>
+                        </a>
                       </h3>
 
                       <p itemProp="description" className="text-xs text-zinc-600 line-clamp-3 leading-relaxed">
@@ -675,6 +802,18 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
         existingUser={currentUser}
       />
 
+      {/* Author analytics dashboard */}
+      <BlogStatsPanel
+        isOpen={isStatsOpen}
+        onClose={() => setIsStatsOpen(false)}
+        blogs={blogs}
+        currentUser={currentUser}
+        onOpenPost={(post) => {
+          setIsStatsOpen(false);
+          openStory(post);
+        }}
+      />
+
       {/* Creator Modal */}
       <WriteBlogModal
         isOpen={isWriteModalOpen}
@@ -691,21 +830,12 @@ export const BlogsPage: React.FC<BlogsPageProps> = ({ onNavigateHome, initialPos
       {/* Reader Modal */}
       <BlogReaderModal
         post={selectedPost}
-        onClose={() => {
-          setSelectedPost(null);
-          if (window.location.hash) {
-            try {
-              history.pushState(null, '', window.location.pathname + window.location.search);
-            } catch {
-              // Ignore
-            }
-          }
-        }}
+        onClose={closeStory}
         onOpenWriteBlog={handleOpenWrite}
         onPostDeleted={() => setBlogs(getStoredBlogs())}
         currentUser={currentUser}
         onSelectAuthor={(authorName) => {
-          setSelectedPost(null);
+          closeStory();
           handleSelectAuthor(authorName);
         }}
       />

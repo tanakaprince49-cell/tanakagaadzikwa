@@ -47,6 +47,21 @@ export interface Article {
   };
 }
 
+export interface BlogImageVariants {
+  /** 16:9 cover - the primary image used for cards, OpenGraph and NewsArticle */
+  wide?: string;
+  /** 4:3 crop - Google News / Discover alternative */
+  standard?: string;
+  /** 1:1 crop - Google News / Discover alternative */
+  square?: string;
+}
+
+export interface BlogStats {
+  views: number;
+  clicks: number;
+  shares: number;
+}
+
 export interface BlogPost {
   id: string;
   slug: string;
@@ -54,6 +69,8 @@ export interface BlogPost {
   excerpt: string;
   body: string;
   imageUrl: string;
+  imageVariants?: BlogImageVariants;
+  stats?: BlogStats;
   author: string;
   authorSurname?: string;
   authorRole?: string;

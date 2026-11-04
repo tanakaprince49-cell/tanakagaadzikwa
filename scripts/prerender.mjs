@@ -425,6 +425,7 @@ User-agent: Bingbot
 Allow: /
 
 Sitemap: ${SITE.origin}/sitemap.xml
+Sitemap: ${SITE.origin}/sitemap-blogs.xml
 Sitemap: ${SITE.origin}/sitemap-news.xml
 `;
 fs.writeFileSync(path.join(distDir, 'robots.txt'), robots, 'utf8');

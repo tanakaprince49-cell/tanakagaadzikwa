@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
 import { toggleLikeBlog, hasUserLiked, deleteCommunityBlog } from '../data/blogsData';
+import { trackPostView, trackPostClick, trackPostShare } from '../data/statsData';
 import { setSingleBlogSeo } from '../utils/seo';
 import { renderFormattedBody } from './WriteBlogModal';
 
@@ -41,6 +42,8 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
 
   React.useEffect(() => {
     setSingleBlogSeo(post);
+    // Analytics: one view per reader session per story
+    trackPostView(post.id);
   }, [post]);
 
   const handleLike = () => {
@@ -50,7 +53,8 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
   };
 
   const handleShare = () => {
-    const shareUrl = window.location.origin + '/blogs#' + post.slug;
+    trackPostShare(post.id);
+    const shareUrl = window.location.origin + '/blogs/' + (post.slug || post.id);
     if (navigator.clipboard) {
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
@@ -151,10 +155,22 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
         {/* Cover Photo - Full Bleed Banner */}
         {post.imageUrl && (
           <div className="w-full aspect-[16/9] rounded-3xl overflow-hidden bg-zinc-100 border border-zinc-200 shadow-sm relative">
-            <img 
-              src={post.imageUrl} 
-              alt={`${post.title} - Cover Photo by ${post.author}`}
+            <img
+              src={post.imageVariants?.wide || post.imageUrl}
+              srcSet={
+                [
+                  post.imageVariants?.standard ? `${post.imageVariants.standard} 900w` : null,
+                  post.imageVariants?.wide ? `${post.imageVariants.wide} 1600w` : null,
+                ]
+                  .filter(Boolean)
+                  .join(', ') || undefined
+              }
+              sizes="(max-width: 896px) 100vw, 896px"
+              alt={`${post.title} - ${post.category || 'Story'} cover photo by ${post.author}`}
               itemProp="image"
+              width={1600}
+              height={900}
+              fetchPriority="high"
               loading="eager"
               decoding="async"
               className="w-full h-full object-cover"
@@ -259,7 +275,14 @@ export const BlogReaderModal: React.FC<BlogReaderModalProps> = ({
         </div>
 
         {/* Article Body with Full Formatting & Bold Letters */}
-        <article itemProp="articleBody" className="pt-2 space-y-6 text-zinc-900 text-base sm:text-xl leading-relaxed font-sans">
+        <article
+          itemProp="articleBody"
+          onClick={(e) => {
+            const anchor = (e.target as HTMLElement).closest('a');
+            if (anchor) trackPostClick(post.id);
+          }}
+          className="pt-2 space-y-6 text-zinc-900 text-base sm:text-xl leading-relaxed font-sans"
+        >
           {renderFormattedBody(post.body)}
         </article>
 

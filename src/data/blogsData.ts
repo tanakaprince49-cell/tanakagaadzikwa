@@ -62,6 +62,7 @@ if (typeof window !== 'undefined') {
             excerpt: data.excerpt || '',
             body: data.body || '',
             imageUrl: data.imageUrl || PRESET_COVER_IMAGES[0].url,
+            imageVariants: data.imageVariants || undefined,
             author: data.author || 'Anonymous Author',
             authorSurname: data.authorSurname,
             authorRole: data.authorRole,
@@ -123,6 +124,7 @@ export async function fetchServerBlogs(): Promise<BlogPost[]> {
         excerpt: data.excerpt || '',
         body: data.body || '',
         imageUrl: data.imageUrl || PRESET_COVER_IMAGES[0].url,
+        imageVariants: data.imageVariants || undefined,
         author: data.author || 'Anonymous Author',
         authorSurname: data.authorSurname,
         authorRole: data.authorRole,
@@ -181,6 +183,7 @@ export async function saveNewBlog(input: {
   excerpt?: string;
   body: string;
   imageUrl?: string;
+  imageVariants?: { wide?: string; standard?: string; square?: string };
   author?: string;
   authorSurname?: string;
   authorRole?: string;
@@ -220,6 +223,7 @@ export async function saveNewBlog(input: {
     excerpt,
     body,
     imageUrl,
+    imageVariants: input.imageVariants,
     author,
     authorSurname: input.authorSurname,
     authorRole,
@@ -257,6 +261,7 @@ export async function saveNewBlog(input: {
       excerpt: newPost.excerpt,
       body: newPost.body,
       imageUrl: newPost.imageUrl,
+      imageVariants: newPost.imageVariants || null,
       author: newPost.author,
       category: newPost.category,
       publishedDate: newPost.publishedDate,

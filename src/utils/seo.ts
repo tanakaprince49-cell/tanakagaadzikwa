@@ -196,14 +196,29 @@ export function setSingleBlogSeo(post: BlogPost) {
   const isoPublishedDate = normalizeDateToIso(post.publishedDate);
   const coverImageUrl = post.imageUrl || SITE.portrait;
 
+  const variants = post.imageVariants || {};
+  const primaryImage = variants.wide || coverImageUrl;
+
   applyBaseMeta({
     path: `/blogs/${blogIdentifier}`,
     title: pageTitle,
     description: metaDescription,
-    keywords: `${post.author}, ${post.author} blogs, ${post.category}, ${post.title}, Tanaka Gaadzikwa, tech news Zimbabwe, AI builder, startup stories, software engineering`,
-    image: coverImageUrl,
+    keywords: `${post.title}, ${post.category}, ${(post.tags || []).join(', ')}, ${post.author}, ${post.author} blogs, Tanaka Gaadzikwa, tech news Zimbabwe, AI builder, startup stories, software engineering`,
+    image: primaryImage,
     ogType: 'article',
   });
+
+  // "Super" image SEO: explicit dimensions + every aspect ratio Google News
+  // can use (16:9, 4:3, 1:1) so the story is eligible for rich image surfaces.
+  updateMetaTag('property', 'og:image:secure_url', primaryImage);
+  updateMetaTag('property', 'og:image:type', 'image/jpeg');
+  updateMetaTag('property', 'og:image:width', '1600');
+  updateMetaTag('property', 'og:image:height', '900');
+  updateMetaTag('property', 'og:image:alt', `${post.title} - ${post.category} story by ${post.author}`);
+  updateLinkTag('image_src', primaryImage);
+  if (variants.square) updateMetaTag('name', 'twitter:image', variants.square);
+  updateMetaTag('name', 'twitter:image:alt', `${post.title} - cover image`);
+  updateMetaTag('itemprop', 'image', primaryImage);
 
   updateMetaTag('name', 'news_keywords', `${post.category}, ${post.author}, Tanaka Gaadzikwa, Technology, Startups, Zimbabwe`);
   updateMetaTag('property', 'article:published_time', isoPublishedDate);
@@ -235,16 +250,49 @@ export function setSingleBlogSeo(post: BlogPost) {
         image: [
           {
             '@type': 'ImageObject',
-            url: coverImageUrl,
-            contentUrl: coverImageUrl,
-            width: 1200,
-            height: 675,
-            caption: post.title,
+            '@id': `${canonicalUrl}#primaryimage`,
+            url: primaryImage,
+            contentUrl: primaryImage,
+            thumbnailUrl: variants.square || primaryImage,
+            width: 1600,
+            height: 900,
+            caption: `${post.title} — ${post.category} story by ${post.author}`,
+            name: post.title,
             representativeOfPage: true,
             creditText: post.author,
             copyrightNotice: `© ${new Date().getFullYear()} Tanaka Gaadzikwa Blogs. Author: ${post.author}`,
+            license: 'https://www.tanakagaadzikwa.com/terms',
+            acquireLicensePage: 'https://www.tanakagaadzikwa.com/terms',
+            creator: { '@id': post.author.toLowerCase().includes('tanaka gaadzikwa') ? IDS.person : IDS.organization },
           },
+          ...(variants.standard
+            ? [
+                {
+                  '@type': 'ImageObject',
+                  url: variants.standard,
+                  contentUrl: variants.standard,
+                  width: 900,
+                  height: 675,
+                  caption: `${post.title} — 4:3 crop`,
+                },
+              ]
+            : []),
+          ...(variants.square
+            ? [
+                {
+                  '@type': 'ImageObject',
+                  url: variants.square,
+                  contentUrl: variants.square,
+                  width: 700,
+                  height: 700,
+                  caption: `${post.title} — 1:1 crop`,
+                },
+              ]
+            : []),
+          primaryImage,
         ],
+        thumbnailUrl: variants.square || primaryImage,
+        keywords: [post.category, ...(post.tags || []), 'Tanaka Gaadzikwa'].filter(Boolean).join(', '),
         datePublished: isoPublishedDate,
         dateModified: isoPublishedDate,
         inLanguage: 'en',
@@ -253,7 +301,16 @@ export function setSingleBlogSeo(post: BlogPost) {
         author: personNode,
         publisher: PUBLISHER_ORG,
         articleSection: post.category || 'Technology',
-        about: { '@type': 'Thing', name: post.category || 'Technology' },
+        about: [
+          { '@type': 'Thing', name: post.category || 'Technology' },
+          { '@id': IDS.linkup },
+        ],
+        mentions: [
+          { '@id': IDS.person },
+          { '@id': IDS.linkup },
+          { '@type': 'Thing', name: 'Artificial Intelligence' },
+          { '@type': 'Place', name: 'Zimbabwe' },
+        ],
         genre: post.category || 'Technology',
         wordCount: countWords(post.body),
         articleBody: toPlainText(post.body),

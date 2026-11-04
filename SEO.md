@@ -121,7 +121,83 @@ is no API to request one.
 
 ---
 
-## 4. Handy commands
+## 4. Blog stories: per-post SEO, image SEO, Google News & author analytics
+
+### Story URLs
+
+Every story now has a real, crawlable URL: `https://www.tanakagaadzikwa.com/blogs/<slug>`.
+The Blogs hub links to them with plain `<a href>` tags, so Google discovers the
+stories by following links (no JavaScript clicks needed), and the reader overlay
+keeps the address bar on that URL.
+
+### Server-rendered story pages
+
+`api/post.js` is a serverless function (Vercel) mapped in `vercel.json`:
+
+| URL | Rendered by |
+| --- | --- |
+| `/blogs/:slug` | `api/post.js` (article HTML + metadata), falls back to the app shell |
+| `/sitemap-blogs.xml` | `api/blogs-sitemap.js` (all stories + `image:image` entries) |
+| `/sitemap-news.xml` | `api/news-sitemap.js` (Google News, only the last 2 days) |
+
+For a story it emits:
+
+- `<title>`, `meta description`, `canonical`, `robots` (max-image-preview:large),
+  `googlebot-news`, `news_keywords`;
+- Open Graph `article` tags, `og:image` at **1600×900** with width/height/alt,
+  `twitter:image` (square crop);
+- JSON-LD `NewsArticle` + `BlogPosting` with an `image` array of the 16:9, 4:3 and
+  1:1 crops (`ImageObject`s with width/height/caption/credit/license), byline,
+  `publisher` (`NewsMediaOrganization`), `wordCount`, `articleBody`,
+  `BreadcrumbList` and the `Person` author node;
+- the full article text, hero image and author bio as plain HTML, so a crawler
+  that does not run JavaScript still sees the story.
+
+If the function cannot read the database at request time it serves the normal app
+shell **with the story's canonical URL and a 200 status** instead of a redirect,
+so the client-rendered article is still indexable.
+
+**One-time manual step:** the Firestore database used by the site
+(`tanakagaadzikwa-ba02c`, named database `ai-studio-…`) currently rejects
+server-side reads — the REST API answers `403 PERMISSION_DENIED` even though the
+browser app can read it (the project enforces App Check for direct API calls).
+Publish the `firestore.rules` in this repo to that database and, if you want the
+serverless function to render the stories itself, disable App Check enforcement
+for Cloud Firestore: Firebase Console → App Check → Cloud Firestore → *unenforce*.
+Until then the story pages are rendered client-side (Google's renderer executes
+the app) and everything works, just without the server-side bonus.
+
+### What the author sees
+
+Signed-in authors get a **My Stats** button on `/blogs`, plus view/click badges on
+their own cards. The dashboard (`src/components/BlogStatsPanel.tsx`) shows total
+views, clicks, shares, likes and click-through rate per story.
+
+Counting rules (`src/data/statsData.ts`):
+
+- a **view** = one story opened per browser session (never inflated by reloads);
+- a **click** = a link clicked inside a story;
+- a **share** = the share/copy-link action;
+- numbers are mirrored to `localStorage` instantly and pushed to the Firestore
+  `blogStats/{postId}` document as increments; the dashboard shows
+  `max(local, remote)` so the author never sees numbers go backwards.
+
+Deploy `firestore.rules` (included in this repo) so the counters can be written:
+it allows public read, create/update limited to the counter fields, increases only,
+and no deletes.
+
+### Sitemaps
+
+- `/sitemap.xml` — static, generated at build time (9 URLs incl. the author page).
+- `/sitemap-blogs.xml` — dynamic: every story + every image crop.
+- `/sitemap-news.xml` — Google News format, last 2 days only, max 1,000 URLs.
+
+`robots.txt` lists all three. Submit them in Search Console → Sitemaps, and add
+the site to the Google News Publisher Center.
+
+---
+
+## 5. Handy commands
 
 ```bash
 npm run build     # vite build + prerender (writes dist/*.html, sitemap, robots)

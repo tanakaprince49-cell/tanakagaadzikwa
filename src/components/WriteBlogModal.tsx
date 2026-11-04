@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { BlogPost, UserProfile } from '../types';
 import { saveNewBlog, calculateReadTime, PRESET_COVER_IMAGES } from '../data/blogsData';
-import { compressImageFile, cropImageToAspect } from '../utils/imageCompressor';
+import { compressImageFile, cropImageToAspect, generateBlogImageVariants } from '../utils/imageCompressor';
 import { ImageCropperModal } from './ImageCropperModal';
 import { RichTextEditor } from './RichTextEditor';
 import { countWords, looksLikeHtml, normalizeBodyHtml, sanitizeHtml, stripHtml } from '../utils/richText';
@@ -318,9 +318,19 @@ export const WriteBlogModal: React.FC<WriteBlogModalProps> = ({
       const finalReadTime = customReadTime.trim() || calculateReadTime(body);
 
       const cleanBody = normalizeBodyHtml(body);
+
+      // Google News / Discover image set: 16:9 primary + 4:3 and 1:1 alternates
+      let imageVariants: { wide?: string; standard?: string; square?: string } | undefined;
+      try {
+        imageVariants = await generateBlogImageVariants(imageUrl || '');
+      } catch {
+        imageVariants = undefined;
+      }
+
       const created = await saveNewBlog({
         title,
         body: cleanBody,
+        imageVariants,
         imageUrl: finalImageUrl,
         author: authorFullName,
         authorSurname: currentUser.surname || '',

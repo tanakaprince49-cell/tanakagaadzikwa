@@ -133,3 +133,24 @@ export async function cropImageToAspect(
     img.src = srcUrl;
   });
 }
+
+/**
+ * Builds the Google News / Discover image set for a story cover:
+ * a 16:9 primary plus 4:3 and 1:1 alternates.
+ *
+ * Google News can then pick the best crop for every surface (news card,
+ * Discover carousel, image search) instead of hard-cropping one image.
+ */
+export async function generateBlogImageVariants(coverUrl: string): Promise<{
+  wide?: string;
+  standard?: string;
+  square?: string;
+}> {
+  if (!coverUrl) return {};
+  const [wide, standard, square] = await Promise.all([
+    cropImageToAspect(coverUrl, 16 / 9, 1600, 0.9),
+    cropImageToAspect(coverUrl, 4 / 3, 900, 0.86),
+    cropImageToAspect(coverUrl, 1, 700, 0.86),
+  ]);
+  return { wide, standard, square };
+}

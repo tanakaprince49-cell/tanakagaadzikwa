@@ -31,6 +31,36 @@ service cloud.firestore {
       );
     }
 
+    // Per-story analytics (views / clicks / shares).
+    // Anonymous readers must be able to bump counters, so writes are limited to
+    // the three counters + timestamp, must only ever increase, and can never be
+    // deleted. Reads stay public so the author dashboard can load totals.
+    match /blogStats/{postId} {
+      allow read: if true;
+      allow delete: if false;
+
+      function statsShapeIsValid() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['postId', 'views', 'clicks', 'shares', 'lastAt'])
+          && (!('postId' in d) || d.postId is string)
+          && (!('views' in d) || (d.views is int && d.views >= 0 && d.views <= 1000000000))
+          && (!('clicks' in d) || (d.clicks is int && d.clicks >= 0 && d.clicks <= 1000000000))
+          && (!('shares' in d) || (d.shares is int && d.shares >= 0 && d.shares <= 1000000000))
+          && (!('lastAt' in d) || d.lastAt is timestamp);
+      }
+
+      function onlyCountersIncreased() {
+        let before = resource.data;
+        let after = request.resource.data;
+        return (!('views' in after) || !('views' in before) || after.views >= before.views)
+          && (!('clicks' in after) || !('clicks' in before) || after.clicks >= before.clicks)
+          && (!('shares' in after) || !('shares' in before) || after.shares >= before.shares);
+      }
+
+      allow create: if statsShapeIsValid();
+      allow update: if statsShapeIsValid() && onlyCountersIncreased();
+    }
+
     // Users collection for profile persistence
     match /users/{userId} {
       allow read: if true;
