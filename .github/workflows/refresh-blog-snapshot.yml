@@ -43,10 +43,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
+      # The repo keeps package-lock.json out of git on purpose, so install
+      # without a lockfile cache.
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Install Playwright Chromium
         run: |
