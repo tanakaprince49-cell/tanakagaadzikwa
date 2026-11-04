@@ -358,6 +358,226 @@ for (const route of ROUTES) {
   console.log(`[prerender] ${route.path.padEnd(12)} -> ${path.relative(rootDir, outPath)}`);
 }
 
+/* ------------------------------------------------------------------ */
+/* Blog stories (from the committed snapshot)                          */
+/* ------------------------------------------------------------------ */
+
+const snapshotPath = path.join(rootDir, 'src/data/blogSnapshot.json');
+
+const snapshot = fs.existsSync(snapshotPath)
+  ? JSON.parse(fs.readFileSync(snapshotPath, 'utf8'))
+  : { generatedAt: today, posts: [] };
+
+const storyPosts = (snapshot.posts || []).filter((post) => post && post.slug && post.title);
+
+const absolute = (url) => {
+  if (!url) return `${SITE.origin}${SITE.portrait}`;
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${SITE.origin}${url.startsWith('/') ? url : `/${url}`}`;
+};
+
+const plainText = (html = '') =>
+  String(html)
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&#39;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const storyUrl = (post) => `${SITE.origin}/blogs/${encodeURIComponent(post.slug)}`;
+
+const storyDate = (post) => {
+  const parsed = post.publishedDate ? new Date(post.publishedDate) : new Date(snapshot.generatedAt || today);
+  return isNaN(parsed.getTime()) ? new Date(snapshot.generatedAt || today) : parsed;
+};
+
+const isOwnerAuthor = (post) => String(post.author || '').toLowerCase().includes('tanaka gaadzikwa');
+
+const buildStoryHead = (post) => {
+  const url = storyUrl(post);
+  const image = absolute(post.imageUrl);
+  const published = storyDate(post).toISOString();
+  const description = (post.excerpt || plainText(post.body)).slice(0, 300);
+  const words = plainText(post.body).split(/\s+/).filter(Boolean).length;
+
+  const authorNode = isOwnerAuthor(post)
+    ? { '@id': `${SITE.origin}/#person` }
+    : {
+        '@type': 'Person',
+        '@id': `${url}#author`,
+        name: post.author,
+        description: post.authorBio || `${post.author} is a published author on Tanaka Gaadzikwa Blogs.`,
+        ...(post.authorAvatar ? { image: absolute(post.authorAvatar) } : {}),
+      };
+
+  const graph = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': ['NewsArticle', 'BlogPosting'],
+        '@id': `${url}#article`,
+        mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+        headline: String(post.title).slice(0, 110),
+        description,
+        image: [
+          {
+            '@type': 'ImageObject',
+            '@id': `${url}#primaryimage`,
+            url: image,
+            contentUrl: image,
+            width: 1600,
+            height: 900,
+            caption: `${post.title} — ${post.category || 'Story'} by ${post.author}`,
+            representativeOfPage: true,
+            creditText: post.author,
+            copyrightNotice: `© ${new Date().getFullYear()} Tanaka Gaadzikwa Blogs`,
+            license: `${SITE.origin}/terms`,
+            acquireLicensePage: `${SITE.origin}/terms`,
+            creator: isOwnerAuthor(post) ? { '@id': `${SITE.origin}/#person` } : { '@type': 'Person', name: post.author },
+          },
+          image,
+        ],
+        datePublished: published,
+        dateModified: published,
+        inLanguage: 'en',
+        isAccessibleForFree: 'True',
+        author: authorNode,
+        publisher: {
+          '@type': 'NewsMediaOrganization',
+          '@id': `${SITE.origin}/#organization`,
+          name: 'Tanaka Gaadzikwa Official Website',
+          url: `${SITE.origin}/`,
+          logo: { '@type': 'ImageObject', url: `${SITE.origin}/favicon-512x512.png`, width: 512, height: 512 },
+        },
+        articleSection: post.category || 'Technology',
+        genre: post.category || 'Technology',
+        keywords: [post.category, 'Tanaka Gaadzikwa', 'Zimbabwe', 'Artificial Intelligence'].filter(Boolean).join(', '),
+        wordCount: words,
+        articleBody: plainText(post.body).slice(0, 5000),
+        about: [{ '@type': 'Thing', name: post.category || 'Technology' }, { '@id': `${SITE.origin}/#linkup` }],
+        mentions: [{ '@id': `${SITE.origin}/#person` }, { '@id': `${SITE.origin}/#linkup` }],
+        url,
+        isPartOf: { '@id': `${SITE.origin}/blogs#blog` },
+        breadcrumb: { '@id': `${url}#breadcrumb` },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        '@id': `${url}#breadcrumb`,
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.origin}/` },
+          { '@type': 'ListItem', position: 2, name: 'Blogs', item: `${SITE.origin}/blogs` },
+          { '@type': 'ListItem', position: 3, name: post.title, item: url },
+        ],
+      },
+      { '@id': `${SITE.origin}/#person` },
+    ],
+  };
+
+  return `
+    <title>${esc(post.title)} by ${esc(post.author)} | Tanaka Gaadzikwa</title>
+    <meta name="description" content="${esc(description)}" />
+    <meta name="author" content="${esc(post.author)}" />
+    <meta name="keywords" content="${esc([post.title, post.category, post.author, 'Tanaka Gaadzikwa', 'Zimbabwe technology'].filter(Boolean).join(', '))}" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1" />
+    <meta name="googlebot-news" content="index, follow" />
+    <meta name="news_keywords" content="${esc([post.category, post.author, 'Tanaka Gaadzikwa', 'Technology', 'Zimbabwe'].filter(Boolean).join(', '))}" />
+    <link rel="canonical" href="${url}" />
+    <link rel="image_src" href="${esc(image)}" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="${esc(SITE.siteName)}" />
+    <meta property="og:title" content="${esc(post.title)}" />
+    <meta property="og:description" content="${esc(description)}" />
+    <meta property="og:url" content="${url}" />
+    <meta property="og:image" content="${esc(image)}" />
+    <meta property="og:image:secure_url" content="${esc(image)}" />
+    <meta property="og:image:width" content="1600" />
+    <meta property="og:image:height" content="900" />
+    <meta property="og:image:alt" content="${esc(`${post.title} - ${post.category || 'Story'} cover image by ${post.author}`)}" />
+    <meta property="article:published_time" content="${published}" />
+    <meta property="article:modified_time" content="${published}" />
+    <meta property="article:author" content="${esc(post.author)}" />
+    <meta property="article:section" content="${esc(post.category || 'Technology')}" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${esc(post.title)}" />
+    <meta name="twitter:description" content="${esc(description)}" />
+    <meta name="twitter:image" content="${esc(image)}" />
+    <meta name="twitter:image:alt" content="${esc(post.title)}" />
+
+    <script type="application/ld+json">${JSON.stringify(graph)}</script>
+  `;
+};
+
+const buildStoryBody = (post) => {
+  // Visible assets stay relative so they resolve on whatever host serves them.
+  const image = post.imageUrl || SITE.portrait;
+  const published = storyDate(post).toISOString().slice(0, 10);
+  const words = plainText(post.body).split(/\s+/).filter(Boolean).length;
+  return `
+  <div id="root">
+    <div data-prerender style="max-width:56rem;margin:0 auto;padding:1.5rem 1.25rem 3rem;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#e5e7eb;background:#0B1120;line-height:1.75">
+      <style>
+        [data-prerender] nav{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem;font-size:.9rem}
+        [data-prerender] a{color:#38BDF8;text-decoration:underline}
+        [data-prerender] .crumbs{font-size:.8rem;color:#94a3b8}
+        [data-prerender] .paper{background:#ffffff;color:#18181b;border-radius:1.25rem;padding:1.75rem 1.5rem;box-shadow:0 20px 45px rgba(0,0,0,.35)}
+        [data-prerender] .paper h1{font-size:2rem;line-height:1.2;margin:.35rem 0 .75rem;font-weight:800;color:#09090b;font-family:Georgia,'Times New Roman',serif}
+        [data-prerender] .paper h2{font-size:1.35rem;margin:1.75rem 0 .5rem;font-weight:700;color:#09090b}
+        [data-prerender] .paper h3{font-size:1.1rem;margin:1.35rem 0 .4rem;font-weight:700;color:#09090b}
+        [data-prerender] .paper p{margin:0 0 .95rem;color:#27272a}
+        [data-prerender] .paper ul,[data-prerender] .paper ol{margin:0 0 1rem 1.25rem;color:#27272a}
+        [data-prerender] .paper li{margin:.3rem 0;color:#27272a}
+        [data-prerender] .paper blockquote{border-left:3px solid #18181b;margin:1rem 0;padding:.3rem 0 .3rem .9rem;color:#3f3f46;font-style:italic}
+        [data-prerender] .paper img{max-width:100%;height:auto;border-radius:.75rem}
+        [data-prerender] .paper a{color:#0369a1}
+        [data-prerender] .paper strong{color:#09090b}
+        [data-prerender] .paper code{background:#f4f4f5;color:#be185d;padding:.1rem .35rem;border-radius:.3rem}
+        [data-prerender] .byline{font-size:.85rem;color:#71717a;margin:0 0 1rem}
+        [data-prerender] .paper .byline{color:#52525b}
+        [data-prerender] .hero{width:100%;height:auto;border-radius:.9rem;margin:0 0 1.5rem;display:block}
+        [data-prerender] .dek{font-size:1.05rem;color:#3f3f46;margin:0 0 1rem}
+      </style>
+      ${NAV}
+      <p class="crumbs"><a href="/">Home</a> › <a href="/blogs">Blogs</a> › <span>${esc(post.title)}</span></p>
+      <div class="paper">
+        <article itemscope itemtype="https://schema.org/NewsArticle">
+          <header>
+            <p class="byline"><span itemprop="articleSection">${esc(post.category || 'General')}</span> · <time itemprop="datePublished" datetime="${published}">${esc(post.publishedDate || published)}</time> · ${esc(post.readTime || `${Math.max(1, Math.ceil(words / 200))} min read`)}</p>
+            <h1 itemprop="headline">${esc(post.title)}</h1>
+            ${post.excerpt ? `<p class="dek" itemprop="description">${esc(post.excerpt)}</p>` : ''}
+            <p class="byline">By <a href="/blogs?author=${encodeURIComponent(post.author)}" rel="author" itemprop="author">${esc(post.author)}</a>${post.authorBio ? ` — ${esc(post.authorBio)}` : ''}</p>
+          </header>
+          <img class="hero" src="${esc(image)}" alt="${esc(`${post.title} - ${post.category || 'Story'} cover image by ${post.author}`)}" width="1600" height="900" itemprop="image" />
+          <div itemprop="articleBody">${post.body || `<p>${esc(post.excerpt || '')}</p>`}</div>
+          <footer>
+            <p class="byline">More from Tanaka Gaadzikwa: <a href="/blogs">all stories</a> · <a href="/about">about</a> · <a href="/contact">contact</a></p>
+          </footer>
+        </article>
+      </div>
+    </div>
+  </div>
+  <noscript><p>Read ${esc(post.title)} on Tanaka Gaadzikwa Blogs.</p></noscript>`;
+};
+
+let storiesWritten = 0;
+for (const post of storyPosts) {
+  const html = headlessTemplate
+    .replace('</head>', `${buildStoryHead(post)}\n  </head>`)
+    .replace(/<body([^>]*)>[\s\S]*<\/body>/i, (_match, attrs) => `<body${attrs}>\n${buildStoryBody(post)}\n  </body>`);
+
+  const outPath = path.join(distDir, 'blogs', post.slug, 'index.html');
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, html, 'utf8');
+  storiesWritten += 1;
+  written += 1;
+  console.log(`[prerender] /blogs/${post.slug.slice(0, 28)}… -> ${path.relative(rootDir, outPath)}`);
+}
+console.log(`[prerender] ${storiesWritten} blog stories prerendered from snapshot`);
+
 /* Sitemap ---------------------------------------------------------- */
 
 const sitemapUrls = [
@@ -367,6 +587,13 @@ const sitemapUrls = [
     priority: 0.9,
     changefreq: 'weekly',
   },
+  ...storyPosts.map((post) => ({
+    path: `/blogs/${post.slug}`,
+    priority: 0.8,
+    changefreq: 'monthly',
+    lastmod: storyDate(post).toISOString().slice(0, 10),
+    image: absolute(post.imageUrl),
+  })),
 ];
 
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -387,10 +614,12 @@ ${sitemapUrls
                 `    <image:image>\n      <image:loc>${url}</image:loc>\n      <image:title>${esc(`Tanaka Gaadzikwa photo ${index + 1}`)}</image:title>\n    </image:image>`
             )
             .join('\n')
-        : '';
+        : route.image
+          ? `    <image:image>\n      <image:loc>${esc(route.image)}</image:loc>\n      <image:title>${esc(route.path.replace('/blogs/', '').replace(/-/g, ' '))}</image:title>\n    </image:image>`
+          : '';
     return `  <url>
     <loc>${loc}</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${route.lastmod || today}</lastmod>
     <changefreq>${route.changefreq}</changefreq>
     <priority>${route.priority.toFixed(1)}</priority>
 ${images}
@@ -402,6 +631,98 @@ ${images}
 
 fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemap, 'utf8');
 console.log('[prerender] sitemap.xml written');
+
+/* Story sitemap (blogs + their images) ------------------------------ */
+
+const blogsSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${storyPosts
+  .map((post) => {
+    const loc = storyUrl(post);
+    const image = absolute(post.imageUrl);
+    const avatar = post.authorAvatar ? absolute(post.authorAvatar) : '';
+    return `  <url>
+    <loc>${loc}</loc>
+    <lastmod>${storyDate(post).toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>${esc(image)}</image:loc>
+      <image:title>${esc(post.title)}</image:title>
+      <image:caption>${esc(post.excerpt || post.title)}</image:caption>
+    </image:image>${avatar ? `\n    <image:image>\n      <image:loc>${esc(avatar)}</image:loc>\n      <image:title>${esc(`${post.author} profile photo`)}</image:title>\n    </image:image>` : ''}
+  </url>`;
+  })
+  .join('\n')}
+  <url>
+    <loc>${SITE.origin}/blogs</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
+`;
+fs.writeFileSync(path.join(distDir, 'sitemap-blogs.xml'), blogsSitemap, 'utf8');
+console.log(`[prerender] sitemap-blogs.xml written (${storyPosts.length} stories)`);
+
+/* Google News sitemap (last 2 days) --------------------------------- */
+
+const NEWS_CUTOFF = 48 * 60 * 60 * 1000;
+const recentStories = storyPosts
+  .filter((post) => Date.now() - storyDate(post).getTime() <= NEWS_CUTOFF)
+  .slice(0, 1000);
+
+const newsEntries = recentStories
+  .map((post) => {
+    const loc = storyUrl(post);
+    const image = absolute(post.imageUrl);
+    return `  <url>
+    <loc>${loc}</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Tanaka Gaadzikwa Blogs</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>${storyDate(post).toISOString()}</news:publication_date>
+      <news:title>${esc(post.title)}</news:title>
+      <news:keywords>${esc([post.category, 'Tanaka Gaadzikwa', 'Zimbabwe technology'].filter(Boolean).join(', '))}</news:keywords>
+    </news:news>
+    <image:image>
+      <image:loc>${esc(image)}</image:loc>
+      <image:title>${esc(post.title)}</image:title>
+      <image:caption>${esc(post.excerpt || post.title)}</image:caption>
+    </image:image>
+  </url>`;
+  })
+  .join('\n');
+
+const hubNewsEntry = `  <url>
+    <loc>${SITE.origin}/blogs</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Tanaka Gaadzikwa News &amp; Blogs</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>${today}</news:publication_date>
+      <news:title>Tanaka Gaadzikwa Blogs &amp; Technology Perspectives</news:title>
+    </news:news>
+    <image:image>
+      <image:loc>${SITE.origin}${SITE.portrait}</image:loc>
+      <image:title>Tanaka Gaadzikwa Blogs &amp; News</image:title>
+      <image:caption>Tanaka Gaadzikwa open platform stories on software development, AI, and startups.</image:caption>
+    </image:image>
+  </url>`;
+
+const newsSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${newsEntries ? `${newsEntries}\n` : ''}${hubNewsEntry}
+</urlset>
+`;
+fs.writeFileSync(path.join(distDir, 'sitemap-news.xml'), newsSitemap, 'utf8');
+console.log(`[prerender] sitemap-news.xml written (${recentStories.length} stories in the last 48h)`);
 
 /* robots.txt ------------------------------------------------------- */
 

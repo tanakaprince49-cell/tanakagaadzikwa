@@ -157,6 +157,30 @@ If the function cannot read the database at request time it serves the normal ap
 shell **with the story's canonical URL and a 200 status** instead of a redirect,
 so the client-rendered article is still indexable.
 
+### Static story pages (what actually runs today)
+
+The production host publishes only the prebuilt `dist/` folder — no rewrites, no
+functions — so `api/*` never runs there and a story URL would 404. To make the
+stories genuinely indexable without a backend, they are snapshotted into the repo
+and prerendered at build time:
+
+```bash
+npm run snapshot:blogs   # capture stories from the live site into src/data/blogSnapshot.json
+npm run build            # prerender dist/blogs/<slug>/index.html + sitemaps
+```
+
+- `scripts/snapshot-blogs.mjs` opens the live site in a real browser (where
+  Firestore works), captures each story's body, author, date and cover, decodes
+  the base64 cover/avatar into real files under `public/blogs/`, and writes
+  `src/data/blogSnapshot.json`.
+- `scripts/prerender.mjs` then writes `dist/blogs/<slug>/index.html` for every
+  story: full article text, hero image, byline, author bio, canonical, OG/Twitter
+  tags and `NewsArticle`/`BlogPosting` JSON-LD. Verified with JavaScript disabled:
+  200 status, correct `<h1>`, ~840 words of body text.
+
+**Re-run `npm run snapshot:blogs` whenever new stories are published**, then
+build and deploy, so the new story gets its own indexable page.
+
 **One-time manual step:** the Firestore database used by the site
 (`tanakagaadzikwa-ba02c`, named database `ai-studio-…`) currently rejects
 server-side reads — the REST API answers `403 PERMISSION_DENIED` even though the
@@ -188,9 +212,10 @@ and no deletes.
 
 ### Sitemaps
 
-- `/sitemap.xml` — static, generated at build time (9 URLs incl. the author page).
-- `/sitemap-blogs.xml` — dynamic: every story + every image crop.
-- `/sitemap-news.xml` — Google News format, last 2 days only, max 1,000 URLs.
+- `/sitemap.xml` — static, generated at build time: 10 URLs (site pages, the
+  author page and every snapshotted story) with `<image:image>` entries.
+- `/sitemap-blogs.xml` — static, every story + its cover/avatar images.
+- `/sitemap-news.xml` — static, Google News format, last 2 days only, max 1,000 URLs.
 
 `robots.txt` lists all three. Submit them in Search Console → Sitemaps, and add
 the site to the Google News Publisher Center.
