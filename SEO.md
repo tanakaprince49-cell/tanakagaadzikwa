@@ -178,8 +178,17 @@ npm run build            # prerender dist/blogs/<slug>/index.html + sitemaps
   tags and `NewsArticle`/`BlogPosting` JSON-LD. Verified with JavaScript disabled:
   200 status, correct `<h1>`, ~840 words of body text.
 
-**Re-run `npm run snapshot:blogs` whenever new stories are published**, then
-build and deploy, so the new story gets its own indexable page.
+**This now happens automatically.** `.github/workflows/refresh-blog-snapshot.yml`
+runs every 30 minutes (and on demand from the Actions tab): it captures the live
+stories with Playwright, runs the build, and pushes the refreshed snapshot. That
+push triggers the normal deploy, so a story published in the app gets its own
+indexable page, sitemap entry and news entry within ~30 minutes — no manual step.
+
+- Manual run: Actions → *Refresh blog snapshot* → **Run workflow**.
+- Local run: `npm run deploy:refresh` (= `npm run snapshot:blogs && npm run build`).
+- The job is safe: an empty capture never overwrites a good snapshot, unchanged
+  stories produce no diff (so no pointless deploys), and the build must pass
+  before anything is committed.
 
 **One-time manual step:** the Firestore database used by the site
 (`tanakagaadzikwa-ba02c`, named database `ai-studio-…`) currently rejects
