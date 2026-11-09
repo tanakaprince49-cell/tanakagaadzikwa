@@ -8,11 +8,12 @@ import { NowPage } from './pages/NowPage';
 import { ContactPage } from './pages/ContactPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { TermsOfServicePage } from './pages/TermsOfServicePage';
+import { PressKitPage } from './pages/PressKitPage';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 
 /** Every internal route the SPA owns (used for link interception + routing). */
-const INTERNAL_PATHS = ['/', '/about', '/projects', '/now', '/blogs', '/contact', '/privacy', '/terms'];
+const INTERNAL_PATHS = ['/', '/about', '/projects', '/now', '/blogs', '/contact', '/privacy', '/terms', '/press'];
 
 const isInternalHref = (href: string) => {
   if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')) return false;
@@ -74,6 +75,8 @@ export default function App() {
   const isContactRoute = currentPath === '/contact';
   const isPrivacyRoute = currentPath === '/privacy';
   const isTermsRoute = currentPath === '/terms';
+  // Unlisted press/photo library. Not linked in any navigation - see PressKitPage.
+  const isPressRoute = currentPath === '/press';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0B1120] text-white font-sans selection:bg-[#38BDF8]/30 selection:text-white">
@@ -102,6 +105,8 @@ export default function App() {
             onNavigateHome={() => navigateTo('/')}
             onNavigateBlogs={() => navigateTo('/blogs')}
           />
+        ) : isPressRoute ? (
+          <PressKitPage />
         ) : (
           <HomePage onNavigateToBlogs={() => navigateTo('/blogs')} />
         )}

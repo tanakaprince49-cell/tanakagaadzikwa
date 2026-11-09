@@ -127,6 +127,7 @@ export function applyPageSeo(path: string) {
     title: route.title,
     description: route.description,
     keywords: route.keywords,
+    image: (route as { image?: string }).image,
     ogType: route.schema === 'home' || route.schema === 'about' ? 'profile' : 'website',
     jsonLdId: 'dynamic-page-ldjson',
     jsonLd: buildPageGraph(route.path),

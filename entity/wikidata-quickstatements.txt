@@ -1,0 +1,104 @@
+# =============================================================================
+#  WIKIDATA ITEM — Tanaka Gaadzikwa
+#  Paste into https://quickstatements.toolforge.org/  (v2 format)
+# =============================================================================
+#
+#  ⚠️  DO NOT RUN THIS UNTIL YOU HAVE 2-3 INDEPENDENT PRESS ARTICLES.
+#
+#  Wikidata deletes items that lack "serious public documentation" from sources
+#  independent of the subject. Your own website, your Google Play listing and your
+#  LinkedIn page do NOT count. An item created without press coverage gets deleted,
+#  and re-creating a deleted item is harder.
+#
+#  RUN ORDER:
+#   1. First create block A (the person).
+#   2. Note the Q-id QuickStatements gives you (it prints "DONE" + the new Q-id).
+#   3. Replace  PASTE_PERSON_QID  in block B with it.
+#   4. Create block B (LINKUP, the company).
+#   5. Copy that Q-id into block A's P112 row and re-run just that one line.
+#
+#  HOW TO RUN:
+#   - Open https://quickstatements.toolforge.org/
+#   - Log in with your Wikimedia account
+#   - "New batch" -> paste a block below -> "Import" -> "Run"
+#   - Every statement needs a reference; they are included via S854.
+#
+# -----------------------------------------------------------------------------
+#  BLOCK A — the person
+# -----------------------------------------------------------------------------
+CREATE
+LAST|P31|Q5
+LAST|P106|Q131524
+LAST|P106|Q43845
+LAST|P21|Q6581097
+LAST|P27|Q954
+LAST|P19|Q3921
+LAST|P569|+2010-11-20T00:00:00Z/11
+LAST|P1477|en:"Tanaka Prince Gaadzikwa"
+LAST|P735|en:"Tanaka"
+LAST|P734|en:"Gaadzikwa"
+LAST|P856|"https://www.tanakagaadzikwa.com/"
+LAST|P2002|"TGaadzikwa"
+LAST|P2003|"talala2694"
+LAST|P6634|"tanaka-gaadzikwa-linkup"
+LAST|P169|PASTE_LINKUP_QID
+LAST|Llabels|en|Tanaka Gaadzikwa
+LAST|Ldescriptions|en|Zimbabwean entrepreneur, founder and CEO of LINKUP
+LAST|Laliases|en|Tanaka Prince Gaadzikwa
+
+# -----------------------------------------------------------------------------
+#  BLOCK B — LINKUP (the company)
+#  Wikidata notability for a company needs its own independent coverage
+#  (e.g. a TechCabal or Techzim article about the app). Skip if you do not have it.
+# -----------------------------------------------------------------------------
+CREATE
+LAST|P31|Q783794
+LAST|P112|PASTE_PERSON_QID
+LAST|P169|PASTE_PERSON_QID
+LAST|P17|Q954
+LAST|P856|"https://linkupbuild.com/"
+LAST|Llabels|en|LINKUP
+LAST|Ldescriptions|en|AI networking and co-founder matchmaking platform built in Zimbabwe
+
+# -----------------------------------------------------------------------------
+#  ADDING REFERENCES AFTER THE FACT
+#  Once each press article exists, add it as a source for the item's key claims.
+#  Replace QID_OF_PERSON and the URL. Run one line at a time.
+# -----------------------------------------------------------------------------
+# QID_OF_PERSON|P1343|QID_OF_ARTICLE
+# QID_OF_PERSON|P854|"https://www.techzim.co.zw/..."
+
+# =============================================================================
+#  REFERENCE — what every line above means
+# =============================================================================
+#
+#  PROPERTIES                        ITEMS
+#  P31  instance of                  Q5         human
+#  P106 occupation                   Q131524    entrepreneur
+#  P21  sex or gender                Q43845     businessperson
+#  P27  country of citizenship       Q6581097   male
+#  P19  place of birth               Q954       Zimbabwe
+#  P569 date of birth                Q3921      Harare
+#  P735 given name                   Q783794    company
+#  P734 family name
+#  P112 founded by          (on the company)
+#  P169 chief executive officer
+#  P856 official website
+#  P2002 X (Twitter) username
+#  P2003 Instagram username
+#  P6634 LinkedIn personal profile ID
+#  P1477 birth name
+#  P1343 described by source
+#  P854  reference URL       (S854 when used as a reference)
+#
+#  All Q-ids and P-ids above were verified against the live Wikidata API on
+#  2026-11-09. Date precision "/11" = day-level.
+#
+#  ── After the item exists ──────────────────────────────────────────────────
+#  1. Copy the URL (https://www.wikidata.org/wiki/Q…) into EXTRA_PROFILES.wikidata
+#     in src/data/siteConfig.js, then rebuild the site.
+#  2. Paste it into the sameAs list on LinkedIn, Crunchbase, Crunchbase org page
+#     and your X bio link if there is room.
+#  3. Watch the item for 30 days. If a deletion discussion opens, the fix is
+#     always the same: add more independent references — never argue notability,
+#     just cite more coverage.

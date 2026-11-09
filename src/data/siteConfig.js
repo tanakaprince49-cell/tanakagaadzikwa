@@ -9,6 +9,8 @@
  * Keep it dependency-free plain JS so both TypeScript and Node can read it.
  */
 
+import { PHOTOS, PHOTO_LICENSE } from './photoGallery.js';
+
 export const SITE = {
   origin: 'https://www.tanakagaadzikwa.com',
   name: 'Tanaka Gaadzikwa',
@@ -32,6 +34,9 @@ export const SITE = {
   foundingDate: '2024-01-01',
 };
 
+/** Absolute URL for every on-domain press photo (used by Person.image + sitemaps). */
+export const PHOTO_URLS = PHOTOS.map((photo) => `${SITE.origin}${photo.src}`);
+
 /** Stable node identifiers - referenced across every page so Google merges the entity. */
 export const IDS = {
   person: `${SITE.origin}/#person`,
@@ -41,6 +46,56 @@ export const IDS = {
   linkup: `${SITE.origin}/#linkup`,
   faq: `${SITE.origin}/#faq`,
   image: `${SITE.origin}/#primaryimage`,
+};
+
+/**
+ * The portraits that were already live on the home page. Kept as their own
+ * export because the image sitemap may only list images that actually appear on
+ * the URL it declares - these five do, the /press library does not.
+ */
+export const HOME_PORTRAITS = [
+  'https://i.ibb.co/pvvN63sV/20260526-181511.webp',
+  'https://i.ibb.co/sdcn3p4x/IMG-20260930-WA0001.webp',
+  'https://i.ibb.co/WNGVKXg6/IMG-20260930-WA0000.webp',
+  'https://i.ibb.co/DHnTYFLF/IMG-20260730-114833.webp',
+  'https://i.ibb.co/BHN84Z9M/20260526-181536.webp',
+  'https://i.ibb.co/DHnKZWtw/20250411-090522.webp',
+  'https://i.ibb.co/Q7ww6xBh/20250411-090743.webp',
+  'https://i.ibb.co/szxQw83/20250411-090734.webp',
+];
+
+/**
+ * Profiles that already exist and are live. Every one of these should link back to
+ * https://www.tanakagaadzikwa.com/ - that reciprocal link is what closes the loop
+ * and lets Google merge them into a single person.
+ */
+export const BASE_SAMEAS = [
+  'https://www.tanakagaadzikwa.com/',
+  'https://linkupbuild.com/',
+  'https://x.com/TGaadzikwa',
+  'https://instagram.com/talala2694',
+  'https://youtube.com/@neverletbrocook0',
+  'https://www.linkedin.com/in/tanaka-gaadzikwa-linkup/',
+  'https://t.me/tanaka_93',
+  'https://play.google.com/store/apps/details?id=com.tana.linkup',
+];
+
+/**
+ * Identity databases that do NOT exist for Tanaka yet.
+ *
+ * Fill these in the moment each profile is created, then `npm run build`. Empty
+ * strings are skipped by the `.filter(Boolean)` below, so the JSON-LD can never
+ * point at a URL that 404s - a broken sameAs actively damages entity confidence.
+ *
+ * Full instructions: entity/KNOWLEDGE-PANEL-PLAYBOOK.md
+ */
+export const EXTRA_PROFILES = {
+  // e.g. 'https://www.wikidata.org/wiki/Q123456789'
+  wikidata: '',
+  // e.g. 'https://www.crunchbase.com/person/tanaka-gaadzikwa'
+  crunchbase: '',
+  // Only when an independent editor creates a Wikipedia article - never before.
+  wikipedia: '',
 };
 
 export const PERSON = {
@@ -72,16 +127,10 @@ export const PERSON = {
   birthDate: '2010-11-20',
   description:
     "Tanaka Gaadzikwa (full name Tanaka Prince Gaadzikwa, born November 20, 2010) is a young entrepreneur, tech founder and CEO of LINKUP, building technology in Harare, Zimbabwe. Known globally as the 'Startup Cupid' and 'The Minister of AI'.",
-  image: [
-    'https://i.ibb.co/pvvN63sV/20260526-181511.webp',
-    'https://i.ibb.co/sdcn3p4x/IMG-20260930-WA0001.webp',
-    'https://i.ibb.co/WNGVKXg6/IMG-20260930-WA0000.webp',
-    'https://i.ibb.co/DHnTYFLF/IMG-20260730-114833.webp',
-    'https://i.ibb.co/BHN84Z9M/20260526-181536.webp',
-    'https://i.ibb.co/DHnKZWtw/20250411-090522.webp',
-    'https://i.ibb.co/Q7ww6xBh/20250411-090743.webp',
-    'https://i.ibb.co/szxQw83/20250411-090734.webp',
-  ],
+  // 18 on-domain press photos first, then the original remote portraits. A full
+  // image list on the Person node is one of the strongest signals Google uses to
+  // attach faces to a name in image search and the knowledge panel.
+  image: [...PHOTO_URLS, ...HOME_PORTRAITS],
   email: `mailto:${SITE.email}`,
   worksFor: { '@id': IDS.linkup },
   founderOf: { '@id': IDS.linkup },
@@ -100,16 +149,9 @@ export const PERSON = {
     'African Startups',
     'Building in Zimbabwe',
   ],
-  sameAs: [
-    'https://www.tanakagaadzikwa.com/',
-    'https://linkupbuild.com/',
-    'https://x.com/TGaadzikwa',
-    'https://instagram.com/talala2694',
-    'https://youtube.com/@neverletbrocook0',
-    'https://www.linkedin.com/in/tanaka-gaadzikwa-linkup/',
-    'https://t.me/tanaka_93',
-    'https://play.google.com/store/apps/details?id=com.tana.linkup',
-  ],
+  // sameAs is built from BASE_SAMEAS + EXTRA_PROFILES below so that the entity
+  // graph never contains a dead link.
+  sameAs: [...BASE_SAMEAS, ...Object.values(EXTRA_PROFILES).filter(Boolean)],
 };
 
 export const LINKUP_ORG = {
@@ -274,6 +316,18 @@ export const ROUTES = [
     schema: 'blogs',
   },
   {
+    path: '/press',
+    priority: 0.6,
+    changefreq: 'monthly',
+    title: 'Tanaka Gaadzikwa Photos & Press Kit | Official Photo Library',
+    description:
+      'The official photo library of Tanaka Gaadzikwa: 18 high-resolution press photos of the LINKUP founder, Startup Cupid and Zimbabwean tech entrepreneur, free to use with credit.',
+    image: `${SITE.origin}/images/tanaka/tanaka-gaadzikwa-beanie-field-smiling.jpg`,
+    keywords:
+      'Tanaka Gaadzikwa photos, Tanaka Gaadzikwa press kit, Tanaka Gaadzikwa images, Tanaka Gaadzikwa headshot, Tanaka Gaadzikwa pictures, LINKUP founder photo, young Zimbabwean entrepreneur photos, Startup Cupid photo, Minister of AI portrait, Zimbabwe tech founder gallery',
+    schema: 'press',
+  },
+  {
     path: '/contact',
     priority: 0.7,
     changefreq: 'monthly',
@@ -305,7 +359,19 @@ export const ROUTES = [
   },
 ];
 
-export default { SITE, IDS, PERSON, LINKUP_ORG, WEBSITE, PUBLISHER_ORG, FAQ_ITEMS, ROUTES };
+export default {
+  SITE,
+  IDS,
+  PERSON,
+  HOME_PORTRAITS,
+  LINKUP_ORG,
+  WEBSITE,
+  PUBLISHER_ORG,
+  FAQ_ITEMS,
+  ROUTES,
+  PHOTOS,
+  PHOTO_URLS,
+};
 
 /* ------------------------------------------------------------------ */
 /* Structured-data builders (shared by the runtime and the prerenderer) */
@@ -368,9 +434,20 @@ const PROJECT_ITEMS = [
  */
 export function buildPageGraph(path) {
   const route = ROUTES.find((r) => r.path === path) || ROUTES[0];
+  const primaryImageUrl = route.image || SITE.portrait;
   const graph = [
     webPageNode(path, route),
     breadcrumbList(path, route.title.split('|')[0].trim()),
+    // Defines the #primaryimage node that every WebPage above points at.
+    {
+      '@type': 'ImageObject',
+      '@id': IDS.image,
+      url: primaryImageUrl,
+      contentUrl: primaryImageUrl,
+      caption: `${PERSON.name} - ${route.title}`,
+      representativeOfPage: true,
+      creator: { '@id': IDS.person },
+    },
     WEBSITE,
     // Full Person definition on every route so the entity is never a dangling @id
     {
@@ -459,6 +536,62 @@ export function buildPageGraph(path) {
         name: PERSON.name,
         email: PERSON.email,
         sameAs: PERSON.sameAs,
+      },
+    });
+  }
+
+  if (route.schema === 'press') {
+    graph.push({
+      '@type': ['CollectionPage', 'ImageGallery'],
+      '@id': `${absoluteUrl('/press')}#gallery`,
+      url: absoluteUrl('/press'),
+      name: `Photo library of ${PERSON.name} (${PHOTOS.length} press photos)`,
+      description: route.description,
+      about: { '@id': IDS.person },
+      author: { '@id': IDS.person },
+      creator: { '@id': IDS.person },
+      copyrightHolder: { '@id': IDS.person },
+      license: PHOTO_LICENSE.url,
+      isPartOf: { '@id': IDS.website },
+      inLanguage: 'en',
+      keywords: route.keywords,
+      mainEntity: {
+        '@type': 'ItemList',
+        name: `Official photos of ${PERSON.name}`,
+        numberOfItems: PHOTOS.length,
+        itemListOrder: 'https://schema.org/ItemListOrderAscending',
+        itemListElement: PHOTOS.map((photo, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          item: {
+            '@type': 'ImageObject',
+            '@id': `${SITE.origin}${photo.src}#image`,
+            contentUrl: `${SITE.origin}${photo.src}`,
+            url: `${SITE.origin}${photo.src}`,
+            name: photo.title,
+            caption: photo.caption,
+            description: photo.description,
+            width: { '@type': 'QuantitativeValue', value: photo.width, unitCode: 'E37' },
+            height: { '@type': 'QuantitativeValue', value: photo.height, unitCode: 'E37' },
+            encodingFormat: photo.mimeType,
+            uploadDate: photo.datePublished,
+            datePublished: photo.datePublished,
+            representativeOfPage: false,
+            creator: { '@id': IDS.person },
+            creditText: photo.creditText,
+            copyrightNotice: photo.copyrightNotice,
+            license: PHOTO_LICENSE.url,
+            acquireLicensePage: absoluteUrl('/press'),
+            keywords: photo.keywords.join(', '),
+            contentLocation: { '@type': 'Place', name: 'Zimbabwe' },
+            about: {
+              '@type': 'Person',
+              '@id': IDS.person,
+              name: PERSON.name,
+              alternateName: PERSON.alternateName,
+            },
+          },
+        })),
       },
     });
   }

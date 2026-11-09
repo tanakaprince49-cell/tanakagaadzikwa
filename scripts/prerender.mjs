@@ -27,9 +27,12 @@ import {
   ROUTES,
   SITE,
   PERSON,
+  HOME_PORTRAITS,
   FAQ_ITEMS,
+  PHOTO_URLS,
   buildPageGraph,
 } from '../src/data/siteConfig.js';
+import { PHOTOS, PHOTO_LICENSE } from '../src/data/photoGallery.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -65,7 +68,7 @@ const stripManagedHead = (html) =>
 
 const buildHead = (route) => {
   const url = route.path === '/' ? `${SITE.origin}/` : `${SITE.origin}${route.path}`;
-  const image = route.path === '/' ? SITE.portrait : SITE.portrait;
+  const image = route.image || SITE.portrait;
   return `
     <title>${esc(route.title)}</title>
     <meta name="description" content="${esc(route.description)}" />
@@ -301,6 +304,32 @@ const STATIC_BODY = {
     <h2>Availability</h2>
     <p>The platform is provided "as is" while under active development; features may change or be interrupted.</p>
     <p>Questions: <a href="mailto:${SITE.email}">${SITE.email}</a> · <a href="/privacy">Privacy Policy</a></p>`,
+
+  press: `
+    <header>
+      <h1>Tanaka Gaadzikwa Photos &amp; Press Kit</h1>
+      <p>The official photo library of <strong>Tanaka Gaadzikwa</strong> — young entrepreneur, software builder, founder and CEO of LINKUP, known as the <em>Startup Cupid</em> and <em>The Minister of AI</em> — photographed in Harare and rural Zimbabwe. ${PHOTOS.length} high-resolution press photos, free to publish with a credit.</p>
+    </header>
+    <section>
+      <h2>Every official photo of Tanaka Gaadzikwa</h2>
+      ${PHOTOS.map((photo, index) => `<figure id="${photo.id}">
+        <img src="${SITE.origin}${photo.src}" alt="${esc(photo.alt)}" width="${photo.width}" height="${photo.height}" loading="${index < 3 ? 'eager' : 'lazy'}" decoding="async" />
+        <figcaption>
+          <h3>${esc(photo.title)}</h3>
+          <p>${esc(photo.caption)}</p>
+          <p>${esc(photo.description)}</p>
+          <p><small>${esc(photo.category)} · ${photo.width}×${photo.height} · Credit: ${esc(photo.creditText)} · ${esc(photo.datePublished)}</small></p>
+        </figcaption>
+      </figure>`).join('\n      ')}
+    </section>
+    <section>
+      <h2>Using these photos</h2>
+      <p>Every image on this page is an official photograph of Tanaka Gaadzikwa, released for editorial and press use. Credit “Tanaka Gaadzikwa” and, where the shot is watermarked, “Photography by TAKEPHOTOS”. Images may not be used to advertise a product or imply an endorsement.</p>
+      <p>Licence: <a href="${PHOTO_LICENSE.url}">${esc(PHOTO_LICENSE.name)}</a>. For originals or an interview, email <a href="mailto:${SITE.email}">${SITE.email}</a>.</p>
+    </section>
+    <footer>
+      <p>More about Tanaka Gaadzikwa: <a href="/about">full biography</a> · <a href="/projects">LINKUP and projects</a> · <a href="/blogs">stories and essays</a> · <a href="/contact">press enquiries</a></p>
+    </footer>`,
 };
 
 function staticBody(route) {
@@ -605,18 +634,20 @@ ${sitemapUrls
       route.path === '/'
         ? `${SITE.origin}/`
         : `${SITE.origin}${route.path.replace('/blogs?author=', '/blogs?author=')}`;
+    const imageTag = (loc, title, caption) =>
+      `    <image:image>\n      <image:loc>${esc(loc)}</image:loc>\n      <image:title>${esc(title)}</image:title>\n      <image:caption>${esc(caption)}</image:caption>\n    </image:image>`;
+
     const images =
+      // Only list images that genuinely render on the URL - Google rejects the rest.
       route.path === '/'
-        ? PERSON.image
-            .slice(0, 5)
-            .map(
-              (url, index) =>
-                `    <image:image>\n      <image:loc>${url}</image:loc>\n      <image:title>${esc(`Tanaka Gaadzikwa photo ${index + 1}`)}</image:title>\n    </image:image>`
-            )
+        ? HOME_PORTRAITS.slice(0, 5)
+            .map((url, index) => imageTag(url, `Tanaka Gaadzikwa portrait ${index + 1}`, 'Official portrait of Tanaka Gaadzikwa, founder and CEO of LINKUP'))
             .join('\n')
-        : route.image
-          ? `    <image:image>\n      <image:loc>${esc(route.image)}</image:loc>\n      <image:title>${esc(route.path.replace('/blogs/', '').replace(/-/g, ' '))}</image:title>\n    </image:image>`
-          : '';
+        : route.path === '/press'
+          ? PHOTOS.map((photo) => imageTag(`${SITE.origin}${photo.src}`, photo.title, photo.caption)).join('\n')
+          : route.image
+            ? imageTag(esc(route.image), route.path.replace('/blogs/', '').replace(/-/g, ' '), route.title)
+            : '';
     return `  <url>
     <loc>${loc}</loc>
     <lastmod>${route.lastmod || today}</lastmod>
@@ -631,6 +662,32 @@ ${images}
 
 fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemap, 'utf8');
 console.log('[prerender] sitemap.xml written');
+
+/* Image sitemap ----------------------------------------------------- */
+
+const imageEntry = (loc, title, caption) =>
+  `    <image:image>\n      <image:loc>${esc(loc)}</image:loc>\n      <image:title>${esc(title)}</image:title>\n      <image:caption>${esc(caption)}</image:caption>\n    </image:image>`;
+
+const imageSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>${SITE.origin}/press</loc>
+    <lastmod>${today}</lastmod>
+${PHOTOS.map((photo) => imageEntry(`${SITE.origin}${photo.src}`, photo.title, photo.caption)).join('\n')}
+  </url>
+  <url>
+    <loc>${SITE.origin}/</loc>
+    <lastmod>${today}</lastmod>
+${HOME_PORTRAITS.slice(0, 5)
+  .map((url, index) => imageEntry(url, `Tanaka Gaadzikwa portrait ${index + 1}`, 'Official portrait of Tanaka Gaadzikwa, young entrepreneur and CEO of LINKUP'))
+  .join('\n')}
+  </url>
+</urlset>
+`;
+
+fs.writeFileSync(path.join(distDir, 'sitemap-images.xml'), imageSitemap, 'utf8');
+console.log(`[prerender] sitemap-images.xml written (${PHOTOS.length} press photos)`);
 
 /* Story sitemap (blogs + their images) ------------------------------ */
 
@@ -748,6 +805,7 @@ Allow: /
 Sitemap: ${SITE.origin}/sitemap.xml
 Sitemap: ${SITE.origin}/sitemap-blogs.xml
 Sitemap: ${SITE.origin}/sitemap-news.xml
+Sitemap: ${SITE.origin}/sitemap-images.xml
 `;
 fs.writeFileSync(path.join(distDir, 'robots.txt'), robots, 'utf8');
 console.log('[prerender] robots.txt written');
